@@ -1,18 +1,15 @@
-# core/agents/stock_agent.py
-
-from __future__ import annotations  # <- 1. satırda olmalı
+from __future__ import annotations
 
 import asyncio
-import os
+import concurrent.futures
 import re
-from typing import TYPE_CHECKING, Dict, List, Optional, Literal, Union
 from datetime import datetime, timezone, timedelta
+from typing import Dict, List, Optional, Literal, Union, Tuple, Any, Protocol, TypedDict
 
-from dotenv import load_dotenv
-import google.generativeai as genai
+from core.repositories.base import StockRepository
+from core.models.stock import StockRow
 
-# ---- TZ: Europe/Istanbul (fallback: TRT/UTC+3) ----
-
+# ==== Timezone: Europe/Istanbul (fallback UTC+3) ====
 try:
     from zoneinfo import ZoneInfo
     try:
@@ -22,31 +19,71 @@ try:
 except Exception:
     IST_TZ = timezone(timedelta(hours=3), name="TRT")
 
-if TYPE_CHECKING:
-    from core.agents.sales_agent import SalesAgent
 
-load_dotenv()
+# ==== Konfig / sabitler ====
+DEFAULT_CRITICAL_RULES: Dict[str, Dict[str, float]] = {
+    "high":   {"min_stock": 20, "sales_threshold": 15.0},
+    "medium": {"min_stock": 10, "sales_threshold": 5.0},
+    "low":    {"min_stock": 3,  "sales_threshold": 1.0},
+}
+DEFAULT_BUFFER_DAYS = 3
+TREND_BUMP_DAYS = 2  # trend "increasing" ise ek buffer
 
 
+# ==== Tip sözleşmeleri ====
+class SalesMetricsTD(TypedDict, total=False):
+    avg_daily_sales: float
+    trend_label: Literal["increasing", "decreasing", "stable"]
+    daily_interval: List[float]  # [low, high]
+    forecast_confidence: Optional[float]
+
+
+class SalesAgentProtocol(Protocol):
+    async def analyze_sales(self, *, store_id: str, product_ids: List[str]) -> Dict[str, Any]: ...
+
+
+class LLMClientProtocol(Protocol):
+    async def generate_content_async(self, prompt: str) -> Any: ...
+
+
+class ProductAnalysisTD(TypedDict, total=False):
+    product_id: Union[int, str]
+    name: str
+    category: str
+    supplier: str
+    price: float
+    current_stock: float
+    min_required: float
+    lead_time_days: int
+    avg_daily_sales: float
+    sales_trend: str
+    traffic_level: Literal["high", "medium", "low"]
+    estimated_days_left: Optional[float]
+    estimated_days_left_ci: List[Optional[float]]
+    is_critical: bool
+    stock_value: float
+    safety_stock: int
+    lead_time_demand: int
+    target_stock_level: int
+    reorder_qty_suggestion: int
+    policy: Dict[str, float]
+    policy_note: str
+
+
+# ==== ID normalize yardımcıları ====
 def _normalize_product_id(pid: int | str | None) -> Optional[str]:
-    """
-    Testlerde product_id bazen int (1, 999), bazen string ('P100') gelebilir.
-    int -> 1 => 'P100', 2 => 'P200', 3 => 'P300'
-    str  -> aynen döndür.
-    """
+    """int -> 1 => 'P100', 2 => 'P200' ... ; str -> olduğu gibi."""
     if pid is None:
         return None
     try:
         n = int(pid)
-        return f"P{n*100}"
+        return f"P{n * 100}"
     except (ValueError, TypeError):
         return str(pid)
-    
+
+
 def _denormalize_product_id(pid_str: str) -> int | str:
-    """
-    'P100' -> 1, 'P200' -> 2, ... Bölünebiliyorsa 100'e böl.
-    Bölünemiyorsa dokunma (string döndür).
-    """
+    """'P100' -> 1, 'P200' -> 2; bölünemezse string döndür."""
     if not isinstance(pid_str, str):
         return pid_str
     m = re.fullmatch(r"P(\d+)", pid_str)
@@ -54,132 +91,240 @@ def _denormalize_product_id(pid_str: str) -> int | str:
         return pid_str
     try:
         n = int(m.group(1))
-        if n % 100 == 0:
-            return n // 100
-        return pid_str
+        return n // 100 if n % 100 == 0 else pid_str
     except Exception:
         return pid_str
 
+
 class StockAgent:
-    def __init__(self, sales_agent: "SalesAgent" | None = None):
+    """
+    Stok analiz ajanı.
+    - SalesAgent'ten satış metriklerini *batch* halde çeker.
+    - Belirsizlik + hizmet seviyesi ile emniyet stoğu/ hedef stok / sipariş önerisi üretir.
+    - format="ai" istenir ise dışarıdan verilen `llm` (DI) ile rapor üretir.
+    """
+
+    def __init__(
+        self,
+        sales_agent: SalesAgentProtocol | None = None,
+        stock_repo: StockRepository | None = None,
+        *,
+        service_level: float = 0.95,
+        critical_rules: Optional[Dict[str, Dict[str, float]]] = None,
+        llm: Optional[LLMClientProtocol] = None,
+    ):
         self.sales_agent = sales_agent
+        self.stock_repo = stock_repo
+        self.service_level = float(service_level)
+        self.critical_threshold_rules = critical_rules or DEFAULT_CRITICAL_RULES
+        self.llm = llm  # sadece format="ai"
 
-        # Opsiyonel: Gemini (testlerde gerekmez)
-        self.gemini = None
-        api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("VITE_GEMINI_API_KEY")
-        if api_key:
-            genai.configure(api_key=api_key)
-            # hafif model tercih edilebilir; testler için fark etmez
-            self.gemini = genai.GenerativeModel("gemini-1.5-pro")
-
-        # Trafik seviyesine göre eşikler
-        self.critical_threshold_rules = {
-            "high":   {"min_stock": 20, "sales_threshold": 15.0},
-            "medium": {"min_stock": 10, "sales_threshold": 5.0},
-            "low":    {"min_stock": 3,  "sales_threshold": 1.0},
-        }
-
-    # -------- Mock stok verisi --------
-    async def get_stock_data(self, store_id: str) -> List[Dict]:
+    # -------- Veri kaynağı (repo varsa oradan, yoksa mock) --------
+    async def get_stock_data(self, store_id: str) -> List[Dict[str, Any]]:
+        if self.stock_repo:
+            rows: List[StockRow] = await self.stock_repo.get_stock_snapshot(store_id)
+            return [r.model_dump() for r in rows]
+        # fallback mock:
         return [
-            {
-                "product_id": "P100", "name": "Premium Kulaklık",
-                "current_stock": 8, "min_required": 5, "lead_time_days": 3,
-                "category": "electronics", "price": 599.99, "supplier": "TechCorp"
-            },
-            {
-                "product_id": "P200", "name": "Kablosuz Şarj Aleti",
-                "current_stock": 2, "min_required": 10, "lead_time_days": 7,
-                "category": "electronics", "price": 199.99, "supplier": "PowerGadgets"
-            },
-            {
-                "product_id": "P300", "name": "Akıllı Saat",
-                "current_stock": 25, "min_required": 8, "lead_time_days": 5,
-                "category": "wearables", "price": 1299.99, "supplier": "WearableTech"
-            },
+            {"product_id": "P100", "name": "Premium Kulaklık",         "current_stock": 8,  "min_required": 5,  "lead_time_days": 3, "category": "electronics", "price": 599.99,  "supplier": "TechCorp"},
+            {"product_id": "P200", "name": "Kablosuz Şarj Aleti",      "current_stock": 2,  "min_required": 10, "lead_time_days": 7, "category": "electronics", "price": 199.99,  "supplier": "PowerGadgets"},
+            {"product_id": "P300", "name": "Akıllı Saat",               "current_stock": 25, "min_required": 8,  "lead_time_days": 5, "category": "wearables",   "price": 1299.99, "supplier": "WearableTech"},
         ]
 
     # -------- SalesAgent entegrasyonu --------
-    async def _get_sales_metrics_for_product(self, store_id: str, product_id: str) -> Dict:
-        """
-        SalesAgent.analyze_sales(store_id, product_id) çıktısından:
-          - avg_daily_sales
-          - weekly_trend (neg/poz → 'decreasing'/'increasing'/'stable')
-        üretir. Veri yoksa makul default döndürür.
-        """
+    @staticmethod
+    def _default_sales_metrics() -> SalesMetricsTD:
+        return {"avg_daily_sales": 1.0, "trend_label": "stable", "daily_interval": [0.8, 1.2]}
+
+    async def _get_sales_metrics_batch(self, store_id: str, product_ids: List[str]) -> Dict[str, SalesMetricsTD]:
+        if not product_ids:
+            return {}
+        if not self.sales_agent:
+            return {pid: self._default_sales_metrics() for pid in product_ids}
+
         try:
-            if not self.sales_agent:
-                return {"avg_daily_sales": 1.0, "trend_label": "stable"}
+            res = await self.sales_agent.analyze_sales(store_id=store_id, product_ids=product_ids)
+            if not isinstance(res, dict) or res.get("status") != "success" or not res.get("products"):
+                return {pid: self._default_sales_metrics() for pid in product_ids}
 
-            analysis = await self.sales_agent.analyze_sales(
-                store_id=store_id, product_id=product_id
-            )
-            if analysis.get("status") != "success" or not analysis.get("products"):
-                return {"avg_daily_sales": 1.0, "trend_label": "stable"}
+            out: Dict[str, SalesMetricsTD] = {}
+            for p in res["products"]:
+                pid = p.get("product_id")
+                if not pid:
+                    continue
 
-            p = analysis["products"][0]  # product_id ile filtrelendiği için tek bir ürün beklenir
-            avg = float(p.get("avg_daily_sales", 1.0))
-            weekly_trend = float(p.get("weekly_trend", 0.0))
-            if weekly_trend > 0.05:
-                trend_label = "increasing"
-            elif weekly_trend < -0.05:
-                trend_label = "decreasing"
-            else:
-                trend_label = "stable"
+                avg = float(p.get("avg_daily_sales", 1.0)) if p.get("avg_daily_sales") is not None else 1.0
+                avg = max(0.0, avg)
 
-            return {"avg_daily_sales": max(0.0, avg), "trend_label": trend_label}
+                weekly_trend = float(p.get("weekly_trend", 0.0)) if p.get("weekly_trend") is not None else 0.0
+                if weekly_trend > 0.05:
+                    trend_label: Literal["increasing", "decreasing", "stable"] = "increasing"
+                elif weekly_trend < -0.05:
+                    trend_label = "decreasing"
+                else:
+                    trend_label = "stable"
+
+                interval = (p.get("sales_forecast") or {}).get("interval")
+                if isinstance(interval, list) and len(interval) == 2:
+                    try:
+                        low7, high7 = float(interval[0]), float(interval[1])
+                        daily_low = max(0.0001, low7 / 7.0)
+                        daily_high = max(daily_low, high7 / 7.0)
+                    except Exception:
+                        daily_low, daily_high = max(0.0001, 0.8 * avg), max(0.0001, 1.2 * avg)
+                else:
+                    daily_low, daily_high = max(0.0001, 0.8 * avg), max(0.0001, 1.2 * avg)
+
+                out[pid] = {
+                    "avg_daily_sales": avg,
+                    "trend_label": trend_label,
+                    "daily_interval": [daily_low, daily_high],
+                    "forecast_confidence": (p.get("sales_forecast") or {}).get("confidence"),
+                }
+
+            # Eksik kalan ürünlere default ata
+            for pid in product_ids:
+                out.setdefault(pid, self._default_sales_metrics())
+
+            return out
+
         except Exception:
-            # Entegre ajan yoksa/hatada defaults
-            return {"avg_daily_sales": 1.0, "trend_label": "stable"}
+            return {pid: self._default_sales_metrics() for pid in product_ids}
 
     # -------- Ana analiz --------
-    async def analyze_stock(self, store_id: str) -> Dict:
+    async def analyze_stock(self, store_id: str) -> Dict[str, Any]:
         stock_rows = await self.get_stock_data(store_id)
-        analyzed: List[Dict] = []
+        product_ids = [str(p["product_id"]) for p in stock_rows if p.get("product_id") is not None]
+        sales_by_pid = await self._get_sales_metrics_batch(store_id, product_ids)
 
+        analyzed: List[ProductAnalysisTD] = []
         for prod in stock_rows:
-            sales_metrics = await self._get_sales_metrics_for_product(
-                store_id, prod["product_id"]
-            )
-            analysis = self._analyze_single_product(prod, sales_metrics)
-            analyzed.append(analysis)
+            metrics = sales_by_pid.get(str(prod["product_id"]), self._default_sales_metrics())
+            analyzed.append(self._analyze_single_product(prod, metrics))
+
+        criticals = [p for p in analyzed if p.get("is_critical")]
+        total_value = round(sum((p.get("current_stock", 0) or 0) * (p.get("price", 0.0) or 0.0) for p in analyzed), 2)
 
         return {
             "store_id": store_id,
             "analysis_date": datetime.now(tz=IST_TZ).isoformat(),
             "products": analyzed,
-            "critical_products": [p for p in analyzed if p["is_critical"]],
-            "total_value": round(
-                sum(p["current_stock"] * p.get("price", 0.0) for p in analyzed), 2
-            ),
+            "critical_products": criticals,
+            "total_value": total_value,
         }
 
-    def _analyze_single_product(self, product: Dict, sales_metrics: Dict) -> Dict:
-        avg_daily = float(sales_metrics.get("avg_daily_sales", 1.0)) or 1.0
+    # -------- Tekil ürün analizi --------
+    def _analyze_single_product(self, product: Dict[str, Any], sales_metrics: SalesMetricsTD) -> ProductAnalysisTD:
+        current_stock = max(0.0, float(product.get("current_stock", 0) or 0))
+        avg_daily = float(sales_metrics.get("avg_daily_sales", 1.0) or 1.0)
         trend = sales_metrics.get("trend_label", "stable")
+        daily_low, daily_high = self._safe_daily_band(sales_metrics.get("daily_interval"), avg_daily)
 
         traffic_level = self._determine_traffic_level(avg_daily)
-        days_left = (product["current_stock"] / avg_daily) if avg_daily > 0 else float("inf")
+        # nokta tahmin (avg)
+        days_left_point = (current_stock / avg_daily) if avg_daily > 0 else float("inf")
+        # belirsizlik aralığı (hız aralığına göre)
+        days_left_low, days_left_high = self._days_left_interval(current_stock, daily_low, daily_high)
 
-        # Artan talepte tedarik riskine karşı buffer'ı yükselt
-        buffer_days = 5 if trend == "increasing" else 3
-        is_critical = (
-            product["current_stock"] < self.critical_threshold_rules[traffic_level]["min_stock"]
-            or days_left < (product["lead_time_days"] + buffer_days)
-            or product["current_stock"] < product.get("min_required", 0)
+        # Trend artıyorsa risk marjını büyüt
+        buffer_days = DEFAULT_BUFFER_DAYS + (TREND_BUMP_DAYS if trend == "increasing" else 0)
+
+        safety, demand_lt, target_stock = self._reorder_policy(
+            avg_daily=avg_daily,
+            daily_low=daily_low,
+            daily_high=daily_high,
+            lead_time_days=int(product.get("lead_time_days", 0) or 0),
+            buffer_days=buffer_days,
+            service_level=self.service_level,
         )
+        reorder_qty = max(0, int(round(target_stock - current_stock)))
+
+        is_critical = (
+            current_stock < self.critical_threshold_rules[traffic_level]["min_stock"]
+            or days_left_point < (int(product.get("lead_time_days", 0) or 0) + buffer_days)
+            or current_stock < float(product.get("min_required", 0) or 0)
+        )
+
+        policy = {
+            "buffer_days": float(buffer_days),
+            "service_level": float(self.service_level),
+            "z_score": float(self._z_from_service_level(self.service_level)),
+        }
 
         return {
             **product,
+            "current_stock": current_stock,
             "avg_daily_sales": round(avg_daily, 2),
             "sales_trend": trend,
             "traffic_level": traffic_level,
-            "estimated_days_left": None if days_left == float("inf") else round(days_left, 1),
-            "is_critical": is_critical,
-            "stock_value": round(product["current_stock"] * product.get("price", 0.0), 2),
+            "estimated_days_left": None if days_left_point == float("inf") else round(days_left_point, 1),
+            "estimated_days_left_ci": [None, None] if days_left_point == float("inf") else [round(days_left_low, 1), round(days_left_high, 1)],
+            "is_critical": bool(is_critical),
+            "stock_value": round(current_stock * float(product.get("price", 0.0) or 0.0), 2),
+            "safety_stock": int(round(safety)),
+            "lead_time_demand": int(round(demand_lt)),
+            "target_stock_level": int(round(target_stock)),
+            "reorder_qty_suggestion": reorder_qty,
+            "policy": policy,
+            "policy_note": f"Buffer {buffer_days} gün, service_level≈{self.service_level:.2f}",
         }
 
-    def _determine_traffic_level(self, sales_rate: float) -> str:
+    @staticmethod
+    def _safe_daily_band(band: Optional[List[float]], avg_daily: float) -> Tuple[float, float]:
+        if not band or len(band) != 2:
+            low = max(0.0001, 0.8 * avg_daily)
+            high = max(low, 1.2 * avg_daily)
+            return low, high
+        low, high = float(band[0]), float(band[1])
+        low = max(0.0001, low)
+        high = max(low, high)
+        return low, high
+
+    @staticmethod
+    def _days_left_interval(stock: float, daily_low: float, daily_high: float) -> Tuple[float, float]:
+        low_days = stock / max(daily_high, 0.0001)  # hızlı tüketim → az gün
+        high_days = stock / max(daily_low, 0.0001)  # yavaş tüketim → çok gün
+        return low_days, high_days
+
+    @staticmethod
+    def _z_from_service_level(p: float) -> float:
+        # Basit tablo: %90 ≈1.28, %95 ≈1.64, %97.5 ≈1.96
+        if p >= 0.975:
+            return 1.96
+        if p >= 0.95:
+            return 1.64
+        if p >= 0.90:
+            return 1.28
+        return 1.0
+
+    @staticmethod
+    def _reorder_policy(
+        *,
+        avg_daily: float,
+        daily_low: float,
+        daily_high: float,
+        lead_time_days: int,
+        buffer_days: int,
+        service_level: float,
+    ) -> Tuple[float, float, float]:
+        """
+        Emniyet stoğu ve hedef stok:
+          - LT talebi: avg_daily * lead_time_days
+          - Sigma(günlük) ~ (high-low) / (2*1.96)    # ~1σ
+          - Emniyet: z * sigma_daily * sqrt(lead_time_days + buffer_days)
+          - Hedef stok: LT talebi + emniyet + buffer_days * avg_daily
+        """
+        sigma_daily = 0.0
+        if daily_high > daily_low:
+            sigma_daily = max(0.0, (daily_high - daily_low) / (2 * 1.96))
+        z = StockAgent._z_from_service_level(service_level)
+        horizon = max(1.0, float(lead_time_days + buffer_days))
+        safety = z * sigma_daily * (horizon ** 0.5)
+        demand_lt = max(0.0, avg_daily) * max(0.0, float(lead_time_days))
+        target = demand_lt + safety + buffer_days * max(0.0, avg_daily)
+        return safety, demand_lt, target
+
+    def _determine_traffic_level(self, sales_rate: float) -> Literal["high", "medium", "low"]:
         if sales_rate >= self.critical_threshold_rules["high"]["sales_threshold"]:
             return "high"
         if sales_rate >= self.critical_threshold_rules["medium"]["sales_threshold"]:
@@ -189,40 +334,37 @@ class StockAgent:
     # -------- Raporlama --------
     async def generate_report(
         self,
-        analysis_result: Dict,
-        format: Literal["text", "json", "ai"] = "text"
-    ) -> Union[str, Dict]:
+        analysis_result: Dict[str, Any],
+        format: Literal["text", "json", "ai"] = "text",
+    ) -> Union[str, Dict[str, Any]]:
         if format == "json":
             return analysis_result
         if format == "ai":
             return await self._generate_ai_report(analysis_result)
         return self._format_text_report(analysis_result)
 
-    async def _generate_ai_report(self, analysis: Dict) -> str:
-        if not self.gemini:
-            return "Gemini API not configured"
+    async def _generate_ai_report(self, analysis: Dict[str, Any]) -> str:
+        if self.llm is None:
+            raise RuntimeError("LLM not configured for StockAgent. Provide `llm` in constructor.")
 
-        prompt = f"""
-Stok Analiz Raporu
-Mağaza: {analysis['store_id']}
-Toplam Stok Değeri: ${analysis.get('total_value', 0):,.2f}
-Kritik Ürün Sayısı: {len(analysis.get('critical_products', []))}
+        prompt = (
+            f"Stok Analiz Raporu\n"
+            f"Mağaza: {analysis['store_id']}\n"
+            f"Toplam Stok Değeri: ${analysis.get('total_value', 0):,.2f}\n"
+            f"Kritik Ürün Sayısı: {len(analysis.get('critical_products', []))}\n\n"
+            f"Görev:\n"
+            f"1) Kritik ürünler için tedarikçi, adet ve gerekçe içeren acil sipariş listesi oluştur.\n"
+            f"2) Satış trendine göre stok seviyelerini optimize edecek 3 aksiyon öner.\n"
+            f"3) 1 haftalık tükenme riski olanları vurgula.\n"
+            f"Kısa, uygulanabilir maddelerle yaz."
+        )
+        resp = await self.llm.generate_content_async(prompt)
+        return getattr(resp, "text", str(resp))
 
-Görev:
-1) Kritik ürünler için tedarikçi, adet ve gerekçe içeren acil sipariş listesi oluştur.
-2) Satış trendine göre stok seviyelerini optimize edecek 3 aksiyon öner.
-3) 1 haftalık tükenme riski olanları vurgula.
-Cevabı maddeler halinde, kısa ve uygulanabilir yaz.
-"""
-        try:
-            resp = await self.gemini.generate_content_async(prompt)
-            return resp.text
-        except Exception as e:
-            return f"⚠️ AI Rapor Hatası: {e}"
-
-    def _format_text_report(self, analysis: Dict) -> str:
+    def _format_text_report(self, analysis: Dict[str, Any]) -> str:
+        now_text = datetime.now(tz=IST_TZ).strftime("%d.%m.%Y %H:%M")
         lines = [
-            f"📅 Rapor Tarihi: {datetime.now(tz=IST_TZ).strftime('%d.%m.%Y %H:%M')}",
+            f"📅 Rapor Tarihi: {now_text}",
             f"🏬 Mağaza: {analysis['store_id']}",
             f"📦 Toplam Stok Değeri: ${analysis.get('total_value', 0):,.2f}",
             "",
@@ -234,9 +376,15 @@ Cevabı maddeler halinde, kısa ve uygulanabilir yaz.
 
         lines.append("🚨 Kritik Stoklar:")
         for p in crit:
+            ci = p.get("estimated_days_left_ci") or ["?", "?"]
+            eta = p.get("estimated_days_left")
+            eta_txt = "∞" if eta is None else f"{eta}"
             lines.append(
-                f"- {p['name']} ({p['product_id']}) | Stok: {p['current_stock']} | "
-                f"ETA: {p.get('estimated_days_left','?')} gün | Tedarikçi: {p.get('supplier','-')}"
+                f"- {p.get('name','?')} ({p.get('product_id','?')}) | "
+                f"Stok: {p.get('current_stock','?')} | "
+                f"ETA: {eta_txt} gün (≈ {ci[0]}–{ci[1]}) | "
+                f"Önerilen Sipariş: {p.get('reorder_qty_suggestion',0)} | "
+                f"Tedarikçi: {p.get('supplier','-')}"
             )
         return "\n".join(lines)
 
@@ -246,70 +394,55 @@ Cevabı maddeler halinde, kısa ve uygulanabilir yaz.
         store_id: str,
         product_id: int | str | None = None,
         format: Literal["json", "text", "ai"] = "json",
-    ):
-        """
-        Async sürüm: orchestrator gibi async çağrılar için.
-        """
+    ) -> Union[Dict[str, Any], str]:
         analysis = await self.analyze_stock(store_id)
 
         # Toplu analiz
         if product_id is None:
-            result_all = {"status": "ok", **analysis}
+            result_all: Dict[str, Any] = {"status": "ok", **analysis}
             result_all["critical_stock"] = analysis.get("critical_products", [])
             if format == "json":
                 return result_all
-            elif format == "text":
+            if format == "text":
                 return self._format_text_report(analysis)
-            elif format == "ai":
+            if format == "ai":
                 return await self._generate_ai_report(analysis)
             return result_all
 
         # Tekil ürün
         norm_id = _normalize_product_id(product_id)
-        found = next(
-            (p for p in analysis.get("products", []) if p.get("product_id") == norm_id),
-            None,
-        )
+        found = next((p for p in analysis.get("products", []) if p.get("product_id") == norm_id), None)
         if found:
             out_product = dict(found)
-            out_product["product_id"] = _denormalize_product_id(found.get("product_id"))
+            out_product["product_id"] = _denormalize_product_id(found.get("product_id"))  # dış API için geriye dönüştür
             return {
                 "status": "ok",
                 "store_id": store_id,
                 "product": out_product,
-                "is_critical": out_product.get("is_critical", False),
+                "is_critical": bool(out_product.get("is_critical", False)),
             }
 
-        else:
-            return {
-                "status": "not_found",
-                "store_id": store_id,
-                "product_id": norm_id,
-                "message": "Product not found in stock analysis",
-            }
+        return {
+            "status": "not_found",
+            "store_id": store_id,
+            "product_id": norm_id,
+            "message": "Product not found in stock analysis",
+        }
 
     def run(
         self,
         store_id: str,
         product_id: int | str | None = None,
         format: Literal["json", "text", "ai"] = "json",
-    ):
+    ) -> Union[Dict[str, Any], str]:
         """
         Senkron sarmalayıcı: unittest/pytest'in senkron testleri için.
-        İçeride ayrı bir event loop açar, arun()'u bloklayarak çalıştırır.
+        Çalışan bir event loop varsa işi ayrı bir thread’de asyncio.run ile koşturur.
         """
         try:
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                fut = ex.submit(lambda: asyncio.run(self.arun(store_id, product_id, format)))
+                return fut.result()
         except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            new_loop = asyncio.new_event_loop()
-            try:
-                return new_loop.run_until_complete(
-                    self.arun(store_id, product_id=product_id, format=format)
-                )
-            finally:
-                new_loop.close()
-
-        return asyncio.run(self.arun(store_id, product_id=product_id, format=format))
+            return asyncio.run(self.arun(store_id, product_id=product_id, format=format))
