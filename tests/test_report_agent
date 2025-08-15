@@ -1,0 +1,20 @@
+import os
+import pytest
+from core.agents.report_agent import ReportAgent
+
+@pytest.mark.asyncio
+async def test_report_html_or_pdf(tmp_path, monkeypatch):
+    ra = ReportAgent(output_dir=str(tmp_path))
+    spec = {
+        "title":"Test Raporu",
+        "kpis":[{"label":"Toplam Ciro","value":"1000"}],
+        "blocks":[
+            {"type":"text","title":"Açıklama","text":"Merhaba"},
+            {"type":"table","title":"Tablo","headers":["Ürün","Adet"],"rows":[["X",3],["Y",2]]},
+            {"type":"chart","title":"Grafik","chart_type":"bar","x":["Pzt","Sal"],"y":[10,20]},
+        ],
+    }
+    html = ra.render("STORE1", spec)
+    fmt, path = ra.to_pdf_or_html(html, prefer_pdf=True)
+    assert fmt in ("pdf","html")
+    assert os.path.exists(path)
