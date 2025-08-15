@@ -1,0 +1,64 @@
+
+syntax = "proto3";
+
+package inventoryManagement;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+message inventoryItem {
+    string id = 1;
+    string productId = 2;
+    int32 quantity = 3;
+    int32 status = 4;
+    int32 lowStockThreshold = 5;
+    google.protobuf.Timestamp lastSyncTimestamp = 6;
+    string storeId = 7;
+}
+message inventoryMovement {
+    string id = 1;
+    string inventoryItemId = 2;
+    int32 quantityDelta = 3;
+    int32 movementType = 4;
+    google.protobuf.Timestamp movementTimestamp = 5;
+    string userId = 6;
+    string movementReason = 7;
+    string storeId = 8;
+}
+message lowStockAlert {
+    string id = 1;
+    string inventoryItemId = 2;
+    int32 alertType = 3;
+    google.protobuf.Timestamp alertTimestamp = 4;
+    bool resolved = 5;
+    string resolvedByUserId = 6;
+    google.protobuf.Timestamp resolvedTimestamp = 7;
+    string storeId = 8;
+}
+
+
+
+
+
+
+message VoidRequest {}
+
+message CurrentUserReply {
+    string userId = 1;
+    string sessionId = 2;
+    string fullname = 3;
+    string email = 4;
+    string roleId = 5;
+    string avatar = 6;
+    bool emailVerified = 7;
+            repeated string userGroupNames = 8;
+    repeated string userGroupIdList = 9;string accessToken = 10;
+}
+
+message HelloMessageReply {
+    string hello = 1;
+}
+
+service inventoryManagementService {
+    rpc currentUser(VoidRequest) returns (CurrentUserReply);
+    rpc helloMessage(VoidRequest) returns (HelloMessageReply);
+}

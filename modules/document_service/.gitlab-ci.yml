@@ -1,0 +1,15 @@
+
+  stages:
+    - deploy
+  
+  build-and-deploy-server:
+    stage: deploy
+    image: docker:stable
+    services:
+      - docker:dind
+    script:
+      - sudo bash -c "docker build -f Dockerfile -t salesai-document:latest ."
+      - sudo bash -c 'cd undefined/salesai/  && docker compose up -d salesai-documnet'
+    only:
+      - main
+  

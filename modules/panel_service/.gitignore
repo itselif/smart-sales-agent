@@ -1,0 +1,11 @@
+node_modules/
+logs/
+*.log
+dist/
+*.log.*
+npm-debug.log*
+/.pnp
+.env.local
+.pnp.js
+.idea/
+.DS_Store

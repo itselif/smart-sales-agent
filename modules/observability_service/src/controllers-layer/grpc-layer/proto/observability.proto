@@ -1,0 +1,74 @@
+
+syntax = "proto3";
+
+package observability;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+message auditLog {
+    string id = 1;
+    string userId = 2;
+    string actionType = 3;
+    string entityType = 4;
+    string entityId = 5;
+    google.protobuf.Struct beforeData = 6;
+    google.protobuf.Struct afterData = 7;
+    int32 severity = 8;
+    string message = 9;
+    google.protobuf.Struct traceContext = 10;
+    string storeId = 11;
+}
+message metricDatapoint {
+    string id = 1;
+    string metricType = 2;
+    string targetType = 3;
+    string targetId = 4;
+    google.protobuf.Timestamp periodStart = 5;
+    string granularity = 6;
+    double value = 7;
+    bool flagAnomalous = 8;
+    string observedByUserId = 9;
+    google.protobuf.Struct context = 10;
+}
+message anomalyEvent {
+    string id = 1;
+    string anomalyType = 2;
+    string triggeredByUserId = 3;
+    string affectedUserId = 4;
+    string storeId = 5;
+    string relatedEntityType = 6;
+    string relatedEntityId = 7;
+    string description = 8;
+    google.protobuf.Timestamp detectedAt = 9;
+    int32 severity = 10;
+    int32 status = 11;
+    string reviewedByUserId = 12;
+}
+
+
+
+
+
+
+message VoidRequest {}
+
+message CurrentUserReply {
+    string userId = 1;
+    string sessionId = 2;
+    string fullname = 3;
+    string email = 4;
+    string roleId = 5;
+    string avatar = 6;
+    bool emailVerified = 7;
+            repeated string userGroupNames = 8;
+    repeated string userGroupIdList = 9;string accessToken = 10;
+}
+
+message HelloMessageReply {
+    string hello = 1;
+}
+
+service observabilityService {
+    rpc currentUser(VoidRequest) returns (CurrentUserReply);
+    rpc helloMessage(VoidRequest) returns (HelloMessageReply);
+}

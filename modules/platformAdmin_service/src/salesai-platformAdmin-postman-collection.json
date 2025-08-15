@@ -1,0 +1,194 @@
+{
+  "info": {
+    "name": "salesai-platformadmin-service API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "getOpenApiSchema",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//openapischemas/:openApiSchemaId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "openapischemas",
+            ":openApiSchemaId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "createOpenApiSchema",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"version\": \"String\",\n  \"description\": \"Text\",\n  \"schemaJson\": \"Text\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//openapischemas",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "openapischemas"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "updateOpenApiSchema",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"description\": \"Text\",\n  \"schemaJson\": \"Text\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//openapischemas/:openApiSchemaId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "openapischemas",
+            ":openApiSchemaId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "deleteOpenApiSchema",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//openapischemas/:openApiSchemaId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "openapischemas",
+            ":openApiSchemaId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "listOpenApiSchemas",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//openapischemas",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "openapischemas"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+module.exports = {
+  createInventoryMovement: require("./createInventoryMovement"),
+  getIdListOfInventoryMovementByField: require("./getIdListOfInventoryMovementByField"),
+  getInventoryMovementById: require("./getInventoryMovementById"),
+  getInventoryMovementAggById: require("./getInventoryMovementAggById"),
+  getInventoryMovementListByQuery: require("./getInventoryMovementListByQuery"),
+  getInventoryMovementStatsByQuery: require("./getInventoryMovementStatsByQuery"),
+  getInventoryMovementByQuery: require("./getInventoryMovementByQuery"),
+  updateInventoryMovementById: require("./updateInventoryMovementById"),
+  updateInventoryMovementByIdList: require("./updateInventoryMovementByIdList"),
+  updateInventoryMovementByQuery: require("./updateInventoryMovementByQuery"),
+  deleteInventoryMovementById: require("./deleteInventoryMovementById"),
+  deleteInventoryMovementByQuery: require("./deleteInventoryMovementByQuery"),
+  getInventoryMovementByStoreId: require("./getInventoryMovementByStoreId"),
+};

@@ -1,0 +1,566 @@
+{
+  "info": {
+    "name": "salesai-observability-service API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "getAuditLog",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//auditlogs/:auditLogId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "auditlogs",
+            ":auditLogId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "createAuditLog",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"ID\",\n  \"actionType\": \"String\",\n  \"entityType\": \"String\",\n  \"entityId\": \"String\",\n  \"beforeData\": \"Object\",\n  \"afterData\": \"Object\",\n  \"severity\": \"Enum\",\n  \"message\": \"Text\",\n  \"traceContext\": \"Object\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//auditlogs",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "auditlogs"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "updateAuditLog",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"message\": \"Text\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//auditlogs/:auditLogId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "auditlogs",
+            ":auditLogId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "deleteAuditLog",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//auditlogs/:auditLogId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "auditlogs",
+            ":auditLogId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "listAuditLogs",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//auditlogs",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "auditlogs"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getMetricDatapoint",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//metricdatapoints/:metricDatapointId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "metricdatapoints",
+            ":metricDatapointId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "createMetricDatapoint",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"metricType\": \"String\",\n  \"targetType\": \"String\",\n  \"targetId\": \"String\",\n  \"periodStart\": \"Date\",\n  \"granularity\": \"String\",\n  \"value\": \"Double\",\n  \"flagAnomalous\": \"Boolean\",\n  \"observedByUserId\": \"ID\",\n  \"context\": \"Object\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//metricdatapoints",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "metricdatapoints"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "updateMetricDatapoint",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"value\": \"Double\",\n  \"flagAnomalous\": \"Boolean\",\n  \"context\": \"Object\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//metricdatapoints/:metricDatapointId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "metricdatapoints",
+            ":metricDatapointId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "deleteMetricDatapoint",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//metricdatapoints/:metricDatapointId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "metricdatapoints",
+            ":metricDatapointId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "listMetricDatapoints",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//metricdatapoints",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "metricdatapoints"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getAnomalyEvent",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//anomalyevents/:anomalyEventId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "anomalyevents",
+            ":anomalyEventId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "createAnomalyEvent",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"anomalyType\": \"String\",\n  \"triggeredByUserId\": \"ID\",\n  \"affectedUserId\": \"ID\",\n  \"storeId\": \"ID\",\n  \"relatedEntityType\": \"String\",\n  \"relatedEntityId\": \"String\",\n  \"description\": \"Text\",\n  \"detectedAt\": \"Date\",\n  \"severity\": \"Enum\",\n  \"status\": \"Enum\",\n  \"reviewedByUserId\": \"ID\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//anomalyevents",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "anomalyevents"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "updateAnomalyEvent",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"description\": \"Text\",\n  \"status\": \"Enum\",\n  \"reviewedByUserId\": \"ID\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//anomalyevents/:anomalyEventId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "anomalyevents",
+            ":anomalyEventId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "deleteAnomalyEvent",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//anomalyevents/:anomalyEventId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "anomalyevents",
+            ":anomalyEventId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "listAnomalyEvents",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//anomalyevents",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "anomalyevents"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

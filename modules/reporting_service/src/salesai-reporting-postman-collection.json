@@ -1,0 +1,566 @@
+{
+  "info": {
+    "name": "salesai-reporting-service API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "getReportRequest",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//reportrequests/:reportRequestId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "reportrequests",
+            ":reportRequestId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "createReportRequest",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reportType\": \"Enum\",\n  \"storeIds\": \"ID\",\n  \"dateFrom\": \"Date\",\n  \"dateTo\": \"Date\",\n  \"productIds\": \"String\",\n  \"format\": \"Enum\",\n  \"status\": \"Enum\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//reportrequests",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "reportrequests"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "updateReportRequest",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"Enum\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//reportrequests/:reportRequestId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "reportrequests",
+            ":reportRequestId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "deleteReportRequest",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//reportrequests/:reportRequestId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "reportrequests",
+            ":reportRequestId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "listReportRequests",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//reportrequests",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "reportrequests"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getReportFile",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//reportfiles/:reportFileId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "reportfiles",
+            ":reportFileId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "createReportFile",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reportRequestId\": \"ID\",\n  \"fileUrl\": \"String\",\n  \"format\": \"Enum\",\n  \"signedUrl\": \"String\",\n  \"signedUrlExpiry\": \"Date\",\n  \"downloadCount\": \"Integer\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//reportfiles",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "reportfiles"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "updateReportFile",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"signedUrl\": \"String\",\n  \"signedUrlExpiry\": \"Date\",\n  \"downloadCount\": \"Integer\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//reportfiles/:reportFileId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "reportfiles",
+            ":reportFileId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "deleteReportFile",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//reportfiles/:reportFileId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "reportfiles",
+            ":reportFileId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "listReportFiles",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//reportfiles",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "reportfiles"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getReportPolicy",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//reportpolicies/:reportPolicyId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "reportpolicies",
+            ":reportPolicyId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "createReportPolicy",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reportType\": \"Enum\",\n  \"maxRetentionDays\": \"Integer\",\n  \"allowedFormats\": \"Enum\",\n  \"description\": \"Text\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//reportpolicies",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "reportpolicies"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "updateReportPolicy",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"maxRetentionDays\": \"Integer\",\n  \"allowedFormats\": \"Enum\",\n  \"description\": \"Text\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//reportpolicies/:reportPolicyId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "reportpolicies",
+            ":reportPolicyId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "deleteReportPolicy",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//reportpolicies/:reportPolicyId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "reportpolicies",
+            ":reportPolicyId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "listReportPolicies",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//reportpolicies",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "reportpolicies"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

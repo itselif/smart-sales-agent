@@ -1,0 +1,62 @@
+
+syntax = "proto3";
+
+package reporting;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+message reportRequest {
+    string id = 1;
+    string requestedByUserId = 2;
+    int32 reportType = 3;
+    repeated string storeIds = 4;
+    google.protobuf.Timestamp dateFrom = 5;
+    google.protobuf.Timestamp dateTo = 6;
+    repeated string productIds = 7;
+    int32 format = 8;
+    int32 status = 9;
+}
+message reportFile {
+    string id = 1;
+    string reportRequestId = 2;
+    string fileUrl = 3;
+    int32 format = 4;
+    string signedUrl = 5;
+    google.protobuf.Timestamp signedUrlExpiry = 6;
+    int32 downloadCount = 7;
+}
+message reportPolicy {
+    string id = 1;
+    int32 reportType = 2;
+    int32 maxRetentionDays = 3;
+    repeated int32 allowedFormats = 4;
+    string description = 5;
+}
+
+
+
+
+
+
+message VoidRequest {}
+
+message CurrentUserReply {
+    string userId = 1;
+    string sessionId = 2;
+    string fullname = 3;
+    string email = 4;
+    string roleId = 5;
+    string avatar = 6;
+    bool emailVerified = 7;
+            repeated string userGroupNames = 8;
+    repeated string userGroupIdList = 9;string accessToken = 10;
+}
+
+message HelloMessageReply {
+    string hello = 1;
+}
+
+service reportingService {
+    rpc currentUser(VoidRequest) returns (CurrentUserReply);
+    rpc helloMessage(VoidRequest) returns (HelloMessageReply);
+}

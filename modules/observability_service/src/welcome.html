@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to Service</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+        padding: 20px;
+        background-color: #f4f4f4;
+        text-align: center;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+      }
+      p {
+        color: #666;
+      }
+      ul {
+        list-style-type: none;
+        padding: 0;
+      }
+      li {
+        background: #eaeaea;
+        margin: 5px 0;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .download {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 10px 15px;
+        background: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+      }
+      .download:hover {
+        background: #0056b3;
+      }
+    </style>
+  </head>
+  <script>
+    async function logout() {
+      try {
+        const response = await fetch("/logout", {
+          method: "POST",
+          credentials: "include", // to send cookies if necessary
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (response.ok) {
+          window.location.href = "/login"; // redirect to login or home
+        } else {
+          alert("Logout failed");
+        }
+      } catch (err) {
+        console.error("Logout error:", err);
+      }
+    }
+  </script>
+  <body>
+    <div class="container">
+      <h1>Welcome to salesai-observability Service</h1>
+      <p>
+        Collects, indexes, and returns audit logs for all sensitive actions and
+        system metrics, supporting audit trail retrieval by user, store, action,
+        or time. Stores and serves system/business metrics, exposes endpoints
+        for audit export, anomaly events, and notification flows.
+      </p>
+      <h2>Available Routes</h2>
+      <ul>
+        <li><strong>getAuditLog</strong> => GET /auditlogs/:auditLogId</li>
+
+        <li><strong>createAuditLog</strong> => POST /auditlogs</li>
+
+        <li><strong>updateAuditLog</strong> => PATCH /auditlogs/:auditLogId</li>
+
+        <li>
+          <strong>deleteAuditLog</strong> => DELETE /auditlogs/:auditLogId
+        </li>
+
+        <li><strong>listAuditLogs</strong> => GET /auditlogs</li>
+
+        <li>
+          <strong>getMetricDatapoint</strong> => GET
+          /metricdatapoints/:metricDatapointId
+        </li>
+
+        <li>
+          <strong>createMetricDatapoint</strong> => POST /metricdatapoints
+        </li>
+
+        <li>
+          <strong>updateMetricDatapoint</strong> => PATCH
+          /metricdatapoints/:metricDatapointId
+        </li>
+
+        <li>
+          <strong>deleteMetricDatapoint</strong> => DELETE
+          /metricdatapoints/:metricDatapointId
+        </li>
+
+        <li><strong>listMetricDatapoints</strong> => GET /metricdatapoints</li>
+
+        <li>
+          <strong>getAnomalyEvent</strong> => GET /anomalyevents/:anomalyEventId
+        </li>
+
+        <li><strong>createAnomalyEvent</strong> => POST /anomalyevents</li>
+
+        <li>
+          <strong>updateAnomalyEvent</strong> => PATCH
+          /anomalyevents/:anomalyEventId
+        </li>
+
+        <li>
+          <strong>deleteAnomalyEvent</strong> => DELETE
+          /anomalyevents/:anomalyEventId
+        </li>
+
+        <li><strong>listAnomalyEvents</strong> => GET /anomalyevents</li>
+      </ul>
+      <a class="download" href="/swagger">Go to Swagger Page</a>
+      <br />
+      <a class="download" href="/getPostmanCollection" download
+        >Download Postman Collection</a
+      >
+      $loginInfo
+    </div>
+  </body>
+</html>

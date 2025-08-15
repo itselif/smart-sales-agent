@@ -1,0 +1,523 @@
+{
+  "info": {
+    "name": "salesai-inventorymanagement-service API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "getInventoryItem",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//inventoryitems/:inventoryItemId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "inventoryitems",
+            ":inventoryItemId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "createInventoryItem",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productId\": \"String\",\n  \"quantity\": \"Integer\",\n  \"status\": \"Enum\",\n  \"lowStockThreshold\": \"Integer\",\n  \"lastSyncTimestamp\": \"Date\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//inventoryitems",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "inventoryitems"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "updateInventoryItem",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"quantity\": \"Integer\",\n  \"status\": \"Enum\",\n  \"lowStockThreshold\": \"Integer\",\n  \"lastSyncTimestamp\": \"Date\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//inventoryitems/:inventoryItemId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "inventoryitems",
+            ":inventoryItemId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "deleteInventoryItem",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//inventoryitems/:inventoryItemId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "inventoryitems",
+            ":inventoryItemId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "listInventoryItems",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//inventoryitems",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "inventoryitems"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getInventoryMovement",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//inventorymovements/:inventoryMovementId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "inventorymovements",
+            ":inventoryMovementId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "createInventoryMovement",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"inventoryItemId\": \"ID\",\n  \"quantityDelta\": \"Integer\",\n  \"movementType\": \"Enum\",\n  \"movementTimestamp\": \"Date\",\n  \"userId\": \"ID\",\n  \"movementReason\": \"Text\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//inventorymovements",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "inventorymovements"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "deleteInventoryMovement",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//inventorymovements/:inventoryMovementId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "inventorymovements",
+            ":inventoryMovementId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "listInventoryMovements",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//inventorymovements",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "inventorymovements"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getLowStockAlert",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//lowstockalerts/:lowStockAlertId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "lowstockalerts",
+            ":lowStockAlertId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "createLowStockAlert",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"inventoryItemId\": \"ID\",\n  \"alertType\": \"Enum\",\n  \"alertTimestamp\": \"Date\",\n  \"resolved\": \"Boolean\",\n  \"resolvedByUserId\": \"ID\",\n  \"resolvedTimestamp\": \"Date\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//lowstockalerts",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "lowstockalerts"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "resolveLowStockAlert",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"resolved\": \"Boolean\",\n  \"resolvedByUserId\": \"ID\",\n  \"resolvedTimestamp\": \"Date\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{serviceUrl}}//resolvelowstockalert/:lowStockAlertId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "resolvelowstockalert",
+            ":lowStockAlertId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "deleteLowStockAlert",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//lowstockalerts/:lowStockAlertId",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "lowstockalerts",
+            ":lowStockAlertId"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "listLowStockAlerts",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "ExampleValue",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "",
+            "value": "d26f6763-ee90-4f97-bd8a-c69fabdb4780",
+            "type": "string"
+          }
+        ],
+        "url": {
+          "raw": "{{serviceUrl}}//lowstockalerts",
+          "host": [
+            "{{serviceUrl}}"
+          ],
+          "path": [
+            "lowstockalerts"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

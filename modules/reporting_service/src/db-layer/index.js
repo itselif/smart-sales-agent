@@ -1,0 +1,62 @@
+const mainFunctions = require("./main");
+
+module.exports = {
+  // main Database
+  // ReportRequest Db Object
+  dbGetReportrequest: mainFunctions.dbGetReportrequest,
+  dbCreateReportrequest: mainFunctions.dbCreateReportrequest,
+  dbUpdateReportrequest: mainFunctions.dbUpdateReportrequest,
+  dbDeleteReportrequest: mainFunctions.dbDeleteReportrequest,
+  dbListReportrequests: mainFunctions.dbListReportrequests,
+  createReportRequest: mainFunctions.createReportRequest,
+  getIdListOfReportRequestByField:
+    mainFunctions.getIdListOfReportRequestByField,
+  getReportRequestById: mainFunctions.getReportRequestById,
+  getReportRequestAggById: mainFunctions.getReportRequestAggById,
+  getReportRequestListByQuery: mainFunctions.getReportRequestListByQuery,
+  getReportRequestStatsByQuery: mainFunctions.getReportRequestStatsByQuery,
+  getReportRequestByQuery: mainFunctions.getReportRequestByQuery,
+  updateReportRequestById: mainFunctions.updateReportRequestById,
+  updateReportRequestByIdList: mainFunctions.updateReportRequestByIdList,
+  updateReportRequestByQuery: mainFunctions.updateReportRequestByQuery,
+  deleteReportRequestById: mainFunctions.deleteReportRequestById,
+  deleteReportRequestByQuery: mainFunctions.deleteReportRequestByQuery,
+
+  // ReportFile Db Object
+  dbGetReportfile: mainFunctions.dbGetReportfile,
+  dbCreateReportfile: mainFunctions.dbCreateReportfile,
+  dbUpdateReportfile: mainFunctions.dbUpdateReportfile,
+  dbDeleteReportfile: mainFunctions.dbDeleteReportfile,
+  dbListReportfiles: mainFunctions.dbListReportfiles,
+  createReportFile: mainFunctions.createReportFile,
+  getIdListOfReportFileByField: mainFunctions.getIdListOfReportFileByField,
+  getReportFileById: mainFunctions.getReportFileById,
+  getReportFileAggById: mainFunctions.getReportFileAggById,
+  getReportFileListByQuery: mainFunctions.getReportFileListByQuery,
+  getReportFileStatsByQuery: mainFunctions.getReportFileStatsByQuery,
+  getReportFileByQuery: mainFunctions.getReportFileByQuery,
+  updateReportFileById: mainFunctions.updateReportFileById,
+  updateReportFileByIdList: mainFunctions.updateReportFileByIdList,
+  updateReportFileByQuery: mainFunctions.updateReportFileByQuery,
+  deleteReportFileById: mainFunctions.deleteReportFileById,
+  deleteReportFileByQuery: mainFunctions.deleteReportFileByQuery,
+
+  // ReportPolicy Db Object
+  dbGetReportpolicy: mainFunctions.dbGetReportpolicy,
+  dbCreateReportpolicy: mainFunctions.dbCreateReportpolicy,
+  dbUpdateReportpolicy: mainFunctions.dbUpdateReportpolicy,
+  dbDeleteReportpolicy: mainFunctions.dbDeleteReportpolicy,
+  dbListReportpolicies: mainFunctions.dbListReportpolicies,
+  createReportPolicy: mainFunctions.createReportPolicy,
+  getIdListOfReportPolicyByField: mainFunctions.getIdListOfReportPolicyByField,
+  getReportPolicyById: mainFunctions.getReportPolicyById,
+  getReportPolicyAggById: mainFunctions.getReportPolicyAggById,
+  getReportPolicyListByQuery: mainFunctions.getReportPolicyListByQuery,
+  getReportPolicyStatsByQuery: mainFunctions.getReportPolicyStatsByQuery,
+  getReportPolicyByQuery: mainFunctions.getReportPolicyByQuery,
+  updateReportPolicyById: mainFunctions.updateReportPolicyById,
+  updateReportPolicyByIdList: mainFunctions.updateReportPolicyByIdList,
+  updateReportPolicyByQuery: mainFunctions.updateReportPolicyByQuery,
+  deleteReportPolicyById: mainFunctions.deleteReportPolicyById,
+  deleteReportPolicyByQuery: mainFunctions.deleteReportPolicyByQuery,
+};

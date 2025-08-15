@@ -1,0 +1,15 @@
+module.exports = {
+  createSaleTransactionHistory: require("./createSaleTransactionHistory"),
+  getIdListOfSaleTransactionHistoryByField: require("./getIdListOfSaleTransactionHistoryByField"),
+  getSaleTransactionHistoryById: require("./getSaleTransactionHistoryById"),
+  getSaleTransactionHistoryAggById: require("./getSaleTransactionHistoryAggById"),
+  getSaleTransactionHistoryListByQuery: require("./getSaleTransactionHistoryListByQuery"),
+  getSaleTransactionHistoryStatsByQuery: require("./getSaleTransactionHistoryStatsByQuery"),
+  getSaleTransactionHistoryByQuery: require("./getSaleTransactionHistoryByQuery"),
+  updateSaleTransactionHistoryById: require("./updateSaleTransactionHistoryById"),
+  updateSaleTransactionHistoryByIdList: require("./updateSaleTransactionHistoryByIdList"),
+  updateSaleTransactionHistoryByQuery: require("./updateSaleTransactionHistoryByQuery"),
+  deleteSaleTransactionHistoryById: require("./deleteSaleTransactionHistoryById"),
+  deleteSaleTransactionHistoryByQuery: require("./deleteSaleTransactionHistoryByQuery"),
+  getSaleTransactionHistoryByStoreId: require("./getSaleTransactionHistoryByStoreId"),
+};

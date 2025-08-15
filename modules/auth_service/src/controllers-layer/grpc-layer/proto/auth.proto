@@ -1,0 +1,128 @@
+
+syntax = "proto3";
+
+package auth;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+message user {
+    string id = 1;
+    string email = 2;
+    string password = 3;
+    string fullname = 4;
+    string avatar = 5;
+    bool emailVerified = 6;
+    string storeId = 7;
+}
+message userGroup {
+    string id = 1;
+    string groupName = 2;
+    string avatar = 3;
+}
+message userGroupMember {
+    string id = 1;
+    string groupId = 2;
+    string userId = 3;
+    string ownerId = 4;
+}
+message store {
+    string id = 1;
+    string name = 2;
+    string codename = 3;
+    string fullname = 4;
+    string avatar = 5;
+    string ownerId = 6;
+}
+
+
+
+
+
+
+message createUserRequest {
+    optional string avatar = 1;
+    string email = 2;
+    string password = 3;
+    string fullname = 4;
+}
+message updateUserRequest {
+    string userId = 1;
+    optional string fullname = 2;
+    optional string avatar = 3;
+}
+message deleteUserRequest {
+    string userId = 1;
+}
+message updateUserRoleRequest {
+    string userId = 1;
+    string roleId = 2;
+}
+message updatePasswordRequest {
+    string userId = 1;
+    string oldPassword = 2;
+    string newPassword = 3;
+}
+message registerTenantUserRequest {
+    optional string socialCode = 1;
+    string password = 2;
+    string fullname = 3;
+    string email = 4;
+    optional string avatar = 5;
+}
+message registerStoreOwnerRequest {
+    optional string avatar = 1;
+    optional string socialCode = 2;
+    string password = 3;
+    string fullname = 4;
+    string email = 5;
+}
+message getUserRequest {
+    string userId = 1;
+}
+message getUserResponse {
+    string id = 1;
+    string email = 2;
+    string password = 3;
+    string fullname = 4;
+    string avatar = 5;
+    bool emailVerified = 6;
+    string storeId = 7;
+}
+message listUsersRequest {
+    
+}
+message listUsersResponse {
+    repeated user items = 1;
+}
+
+message VoidRequest {}
+
+message CurrentUserReply {
+    string userId = 1;
+    string sessionId = 2;
+    string fullname = 3;
+    string email = 4;
+    string roleId = 5;
+    string avatar = 6;
+    bool emailVerified = 7;
+            repeated string userGroupNames = 8;
+    repeated string userGroupIdList = 9;string accessToken = 10;
+}
+
+message HelloMessageReply {
+    string hello = 1;
+}
+
+service authService {
+    rpc createUser (createUserRequest) returns (user);
+    rpc updateUser (updateUserRequest) returns (user);
+    rpc deleteUser (deleteUserRequest) returns (user);
+    rpc updateUserRole (updateUserRoleRequest) returns (user);
+    rpc updatePassword (updatePasswordRequest) returns (user);
+    rpc registerTenantUser (registerTenantUserRequest) returns (user);
+    rpc registerStoreOwner (registerStoreOwnerRequest) returns (user);
+    rpc getUser (getUserRequest) returns (getUserResponse);
+    rpc listUsers (listUsersRequest) returns (listUsersResponse);
+    rpc currentUser(VoidRequest) returns (CurrentUserReply);
+    rpc helloMessage(VoidRequest) returns (HelloMessageReply);
+}

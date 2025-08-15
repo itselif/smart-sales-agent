@@ -1,0 +1,63 @@
+const mainFunctions = require("./main");
+
+module.exports = {
+  // main Database
+  // AuditLog Db Object
+  dbGetAuditlog: mainFunctions.dbGetAuditlog,
+  dbCreateAuditlog: mainFunctions.dbCreateAuditlog,
+  dbUpdateAuditlog: mainFunctions.dbUpdateAuditlog,
+  dbDeleteAuditlog: mainFunctions.dbDeleteAuditlog,
+  dbListAuditlogs: mainFunctions.dbListAuditlogs,
+  createAuditLog: mainFunctions.createAuditLog,
+  getIdListOfAuditLogByField: mainFunctions.getIdListOfAuditLogByField,
+  getAuditLogById: mainFunctions.getAuditLogById,
+  getAuditLogAggById: mainFunctions.getAuditLogAggById,
+  getAuditLogListByQuery: mainFunctions.getAuditLogListByQuery,
+  getAuditLogStatsByQuery: mainFunctions.getAuditLogStatsByQuery,
+  getAuditLogByQuery: mainFunctions.getAuditLogByQuery,
+  updateAuditLogById: mainFunctions.updateAuditLogById,
+  updateAuditLogByIdList: mainFunctions.updateAuditLogByIdList,
+  updateAuditLogByQuery: mainFunctions.updateAuditLogByQuery,
+  deleteAuditLogById: mainFunctions.deleteAuditLogById,
+  deleteAuditLogByQuery: mainFunctions.deleteAuditLogByQuery,
+  getAuditLogByStoreId: mainFunctions.getAuditLogByStoreId,
+
+  // MetricDatapoint Db Object
+  dbGetMetricdatapoint: mainFunctions.dbGetMetricdatapoint,
+  dbCreateMetricdatapoint: mainFunctions.dbCreateMetricdatapoint,
+  dbUpdateMetricdatapoint: mainFunctions.dbUpdateMetricdatapoint,
+  dbDeleteMetricdatapoint: mainFunctions.dbDeleteMetricdatapoint,
+  dbListMetricdatapoints: mainFunctions.dbListMetricdatapoints,
+  createMetricDatapoint: mainFunctions.createMetricDatapoint,
+  getIdListOfMetricDatapointByField:
+    mainFunctions.getIdListOfMetricDatapointByField,
+  getMetricDatapointById: mainFunctions.getMetricDatapointById,
+  getMetricDatapointAggById: mainFunctions.getMetricDatapointAggById,
+  getMetricDatapointListByQuery: mainFunctions.getMetricDatapointListByQuery,
+  getMetricDatapointStatsByQuery: mainFunctions.getMetricDatapointStatsByQuery,
+  getMetricDatapointByQuery: mainFunctions.getMetricDatapointByQuery,
+  updateMetricDatapointById: mainFunctions.updateMetricDatapointById,
+  updateMetricDatapointByIdList: mainFunctions.updateMetricDatapointByIdList,
+  updateMetricDatapointByQuery: mainFunctions.updateMetricDatapointByQuery,
+  deleteMetricDatapointById: mainFunctions.deleteMetricDatapointById,
+  deleteMetricDatapointByQuery: mainFunctions.deleteMetricDatapointByQuery,
+
+  // AnomalyEvent Db Object
+  dbGetAnomalyevent: mainFunctions.dbGetAnomalyevent,
+  dbCreateAnomalyevent: mainFunctions.dbCreateAnomalyevent,
+  dbUpdateAnomalyevent: mainFunctions.dbUpdateAnomalyevent,
+  dbDeleteAnomalyevent: mainFunctions.dbDeleteAnomalyevent,
+  dbListAnomalyevents: mainFunctions.dbListAnomalyevents,
+  createAnomalyEvent: mainFunctions.createAnomalyEvent,
+  getIdListOfAnomalyEventByField: mainFunctions.getIdListOfAnomalyEventByField,
+  getAnomalyEventById: mainFunctions.getAnomalyEventById,
+  getAnomalyEventAggById: mainFunctions.getAnomalyEventAggById,
+  getAnomalyEventListByQuery: mainFunctions.getAnomalyEventListByQuery,
+  getAnomalyEventStatsByQuery: mainFunctions.getAnomalyEventStatsByQuery,
+  getAnomalyEventByQuery: mainFunctions.getAnomalyEventByQuery,
+  updateAnomalyEventById: mainFunctions.updateAnomalyEventById,
+  updateAnomalyEventByIdList: mainFunctions.updateAnomalyEventByIdList,
+  updateAnomalyEventByQuery: mainFunctions.updateAnomalyEventByQuery,
+  deleteAnomalyEventById: mainFunctions.deleteAnomalyEventById,
+  deleteAnomalyEventByQuery: mainFunctions.deleteAnomalyEventByQuery,
+};

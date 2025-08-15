@@ -1,0 +1,15 @@
+stages:
+  - deploy
+  - build
+  - test
+
+deploy_to_server:
+  stage: deploy
+  image: docker:stable
+  services:
+    - docker:dind
+  script:
+    - sudo bash -c "docker build -f Dockerfile -t finance-service:latest ."
+    - sudo bash -c 'cd /home/muhakemat/  && docker compose up -d finance-service'
+  only:
+    - main

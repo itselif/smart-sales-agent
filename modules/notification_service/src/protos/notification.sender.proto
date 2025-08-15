@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package notification;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/empty.proto";
+
+service NotificationSenderService {
+    rpc SendNotice(SendNoticeRequest) returns (NoticeResponse) {}
+}
+
+message SendNoticeRequest {
+    repeated NotificationType types = 1;
+    NotificationTemplate template = 2;
+    string userId = 3;
+    string email = 4;
+    string phoneNumber = 5;
+    string title = 6;
+    string body = 7;
+    bool isStored = 8;
+    google.protobuf.Any metadata = 9;
+}
+
+message NoticeResponse {
+    string id = 1;
+    repeated string failedTypes = 2;      
+}
+
+enum NotificationType {
+    sms = 0;
+    email = 1;
+    push = 2;
+}
+
+enum NotificationTemplate {
+    NONE = 0;      
+    WELCOME = 1;    
+    RESETPASSWORD = 2;   
+    OTP = 3;     
+}

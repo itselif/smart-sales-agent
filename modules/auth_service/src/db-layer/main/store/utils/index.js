@@ -1,0 +1,16 @@
+module.exports = {
+  createStore: require("./createStore"),
+  getIdListOfStoreByField: require("./getIdListOfStoreByField"),
+  getStoreById: require("./getStoreById"),
+  getStoreAggById: require("./getStoreAggById"),
+  getStoreListByQuery: require("./getStoreListByQuery"),
+  getStoreStatsByQuery: require("./getStoreStatsByQuery"),
+  getStoreByQuery: require("./getStoreByQuery"),
+  updateStoreById: require("./updateStoreById"),
+  updateStoreByIdList: require("./updateStoreByIdList"),
+  updateStoreByQuery: require("./updateStoreByQuery"),
+  deleteStoreById: require("./deleteStoreById"),
+  deleteStoreByQuery: require("./deleteStoreByQuery"),
+  getNextCodenameForStore: require("./getNextCodenameForStore"),
+  getStoreByOwnerId: require("./getStoreByOwnerId"),
+};

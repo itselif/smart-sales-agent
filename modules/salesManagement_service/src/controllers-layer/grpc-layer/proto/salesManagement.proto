@@ -1,0 +1,55 @@
+
+syntax = "proto3";
+
+package salesManagement;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+message saleTransaction {
+    string id = 1;
+    string sellerId = 2;
+    double amount = 3;
+    string currency = 4;
+    google.protobuf.Timestamp transactionDate = 5;
+    int32 status = 6;
+    string correctionJustification = 7;
+    string storeId = 8;
+}
+message saleTransactionHistory {
+    string id = 1;
+    string transactionId = 2;
+    int32 changeType = 3;
+    string changedByUserId = 4;
+    google.protobuf.Timestamp changeTimestamp = 5;
+    string correctionJustification = 6;
+    google.protobuf.Struct previousData = 7;
+    google.protobuf.Struct newData = 8;
+    string storeId = 9;
+}
+
+
+
+
+
+message VoidRequest {}
+
+message CurrentUserReply {
+    string userId = 1;
+    string sessionId = 2;
+    string fullname = 3;
+    string email = 4;
+    string roleId = 5;
+    string avatar = 6;
+    bool emailVerified = 7;
+            repeated string userGroupNames = 8;
+    repeated string userGroupIdList = 9;string accessToken = 10;
+}
+
+message HelloMessageReply {
+    string hello = 1;
+}
+
+service salesManagementService {
+    rpc currentUser(VoidRequest) returns (CurrentUserReply);
+    rpc helloMessage(VoidRequest) returns (HelloMessageReply);
+}
