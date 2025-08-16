@@ -62,3 +62,4 @@ def make_cache() -> BaseCache:
     if url and aioredis:
         return RedisCache(url)
     return InMemoryCache()
+
