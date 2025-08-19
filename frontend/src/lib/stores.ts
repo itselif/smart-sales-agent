@@ -12,6 +12,9 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  storeCode?: string;
+  phone?: string;
+  assignedStores: string[]; // Kullanıcının erişebildiği mağaza ID'leri
 }
 
 interface AppState {

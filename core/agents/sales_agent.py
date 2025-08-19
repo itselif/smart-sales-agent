@@ -17,23 +17,21 @@ class LLMClientProtocol(Protocol):
 
 class SalesAgent(BaseAgent):
     """
-    Repo üzerinden satış verisi okuyabilen; repo yoksa deterministik mock üreten,
-    ürün bazında analiz/tahmin yapan ve (opsiyonel) LLM içgörüsü ekleyen satış ajanı.
-    LLM zorunlu değildir; enjekte edilirse AI içgörüler gerçek LLM ile üretilir.
+    Sadece repository üzerinden satış verisi okur.
+    Mock üretim KAPALI (bilerek). Repo sağlanmazsa çalışmaz.
+    Ürün bazında analiz/tahmin yapar; (opsiyonel) LLM içgörüsü ekleyebilir.
     """
 
     def __init__(
         self,
         sales_repo: Optional[SalesRepository] = None,
         trend_analysis_period: int = 30,
-        rng: Optional[np.random.Generator] = None,
         *,
         llm: Optional[LLMClientProtocol] = None,  # DI: opsiyonel LLM
     ):
         super().__init__(name="Advanced Sales Analyst")
         self.repo = sales_repo
         self.trend_analysis_period = int(trend_analysis_period)
-        self.rng = rng or np.random.default_rng(42)
         self.llm = llm
 
         # Basit mevsimsellik (config edilebilir)
@@ -64,7 +62,7 @@ class SalesAgent(BaseAgent):
         end_date: Optional[date] = None,
     ) -> Dict:
         """
-        1) Veri topla
+        1) Veri topla (HER ZAMAN repo’dan)
         2) Analiz
         3) Gözlemle: trend aşırıysa pencereyi genişlet ve yeniden analiz
         """
@@ -106,18 +104,19 @@ class SalesAgent(BaseAgent):
         end_date: date,
         product_ids: Optional[List[str]],
     ) -> List[Dict]:
-        """Repo varsa ordan okur; yoksa deterministik mock üretir."""
-        if self.repo:
-            records: List[SalesRecord] = await self.repo.get_sales_records(
-                store_id=store_id,
-                start_date=start_date,
-                end_date=end_date,
-                product_ids=product_ids,
+        """HER ZAMAN repository’den okur; repo yoksa açık hata fırlatır."""
+        if not self.repo:
+            raise RuntimeError(
+                "SalesRepository is not configured. "
+                "Mock data is disabled. Provide a SalesRepository (e.g., InMemorySalesRepository/Postgres adapter)."
             )
-            return [r.model_dump() for r in records]
-        return await self._get_enhanced_sales_data_mock(
-            store_id, start_date, end_date, product_ids
+        records: List[SalesRecord] = await self.repo.get_sales_records(
+            store_id=store_id,
+            start_date=start_date,
+            end_date=end_date,
+            product_ids=product_ids,
         )
+        return [r.model_dump() for r in records]
 
     async def _run_analysis(self, store_id: str, rows: List[Dict], *, end_date: date) -> Dict:
         if not rows:
@@ -158,50 +157,6 @@ class SalesAgent(BaseAgent):
         result["ai_insights"] = await self._maybe_generate_ai_insights(result["products"])
 
         return result
-
-    # -------------------------------------------------------------------------
-    # Mock veri üretici (deterministik)
-    # -------------------------------------------------------------------------
-
-    async def _get_enhanced_sales_data_mock(
-        self,
-        store_id: str,
-        start_date: date,
-        end_date: date,
-        product_ids: Optional[List[str]],
-    ) -> List[Dict]:
-        """Her gün 3 ürün (P100, P200, P300) için kayıt üretir."""
-        product_names = {"P100": "Premium Kulaklık", "P200": "Kablosuz Şarj", "P300": "Akıllı Saat"}
-        categories = {"P100": "electronics", "P200": "electronics", "P300": "wearables"}
-        unit_prices = {"P100": 599.99, "P200": 199.99, "P300": 1299.99}
-        order = ["P100", "P200", "P300"]
-
-        days = (end_date - start_date).days + 1
-        base: List[Dict] = []
-        for di in range(days):
-            d = start_date + timedelta(days=di)
-            date_str = d.strftime("%Y-%m-%d")
-            for pid in order:
-                if product_ids and pid not in product_ids:
-                    continue
-                mu = {"P100": 3.0, "P200": 2.0, "P300": 4.0}[pid]
-                sigma = {"P100": 1.0, "P200": 1.0, "P300": 2.0}[pid]
-                qty = max(1, int(self.rng.normal(mu, sigma)))
-                price = unit_prices[pid]
-                base.append(
-                    {
-                        "store_id": store_id,
-                        "date": date_str,
-                        "product_id": pid,
-                        "product_name": product_names[pid],
-                        "quantity": qty,
-                        "unit_price": price,
-                        "revenue": round(qty * price, 2),
-                        "category": categories[pid],
-                        "discount": 0.1 if (di % 5 == 0 and pid == "P200") else 0.0,
-                    }
-                )
-        return base
 
     # -------------------------------------------------------------------------
     # Metrikler / Tahmin / Yardımcılar
@@ -421,7 +376,7 @@ class SalesAgent(BaseAgent):
                     continue
             weekly_pattern[day] = int(total)
 
-        # Kategori trend (mock)
+        # Kategori trend (naif)
         cats = {d.get("category") for d in raw_data if d.get("category")}
         category_trends: Dict[str, Dict] = {}
         for cat in cats:

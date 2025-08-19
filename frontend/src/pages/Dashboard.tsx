@@ -22,11 +22,15 @@ import {
   DollarSign,
   BarChart3,
   Target,
-  LogOut
+  LogOut,
+  User
 } from "lucide-react";
+import { UserProfile } from "@/components/UserProfile";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("sales");
+  const [showUserProfile, setShowUserProfile] = useState(false);
   const { user, storeId, setStoreId, setUser } = useAppStore();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -130,13 +134,23 @@ export default function Dashboard() {
                 value={storeId || ""}
                 onChange={handleStoreChange}
                 stores={mockStores}
+                allowedStoreIds={user?.assignedStores}
               />
             </div>
             
             <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground">
-                Hoş geldin, {user.name}
-              </span>
+              <Dialog open={showUserProfile} onOpenChange={setShowUserProfile}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span className="text-sm">Hoş geldin, {user.name}</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="p-0">
+                  <UserProfile onClose={() => setShowUserProfile(false)} />
+                </DialogContent>
+              </Dialog>
+              
               <Button
                 onClick={handleBuildReport}
                 disabled={reportPending || !storeId}
@@ -155,9 +169,10 @@ export default function Dashboard() {
               <Button
                 onClick={handleLogout}
                 variant="ghost"
-                size="sm"
+                className="flex items-center gap-2"
               >
                 <LogOut className="h-4 w-4" />
+                Çıkış
               </Button>
             </div>
           </div>

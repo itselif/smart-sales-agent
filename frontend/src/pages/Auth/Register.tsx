@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useAppStore, mockStores } from "@/lib/stores";
 import { useToast } from "@/hooks/use-toast";
 import { StoreSelector } from "@/components/StoreSelector";
-import { Building2, Lock, Mail, User } from "lucide-react";
+import { Building2, Lock, Mail, User, IdCard } from "lucide-react";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -15,6 +15,7 @@ export default function Register() {
     email: "",
     password: "",
     storeId: "",
+    socialCode: "", // <-- eklendi
   });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -23,37 +24,41 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.storeId) {
-      toast({
-        title: "Hata",
-        description: "Lütfen bir mağaza seçin",
-        variant: "destructive",
-      });
+      toast({ title: "Hata", description: "Lütfen bir mağaza seçin", variant: "destructive" });
+      return;
+    }
+    if (!formData.socialCode.trim()) {
+      toast({ title: "Hata", description: "Lütfen sosyal kod (socialCode) girin", variant: "destructive" });
       return;
     }
 
     setIsLoading(true);
 
-    // Mock registration - replace with real API call later
+    // TODO: Mock yerine gerçek API çağrısı:
+    // const res = await api.post("/auth/register", {
+    //   fullname: formData.name,
+    //   email: formData.email,
+    //   password: formData.password,
+    //   socialCode: formData.socialCode,
+    //   storeId: formData.storeId, // backend gerekliyse
+    // });
+
     setTimeout(() => {
+      // Mock success
       setUser({
         id: "user_1",
         name: formData.name,
         email: formData.email,
         role: "Satış Temsilcisi",
       });
-      
       setStoreId(formData.storeId);
-      
-      toast({
-        title: "Kayıt başarılı",
-        description: "Dashboard'a yönlendiriliyorsunuz...",
-      });
-      
+
+      toast({ title: "Kayıt başarılı", description: "Dashboard'a yönlendiriliyorsunuz..." });
       navigate("/dashboard");
       setIsLoading(false);
-    }, 1000);
+    }, 800);
   };
 
   return (
@@ -65,9 +70,7 @@ export default function Register() {
             <h1 className="text-2xl font-bold">StorePilot</h1>
           </div>
           <CardTitle>Kayıt Ol</CardTitle>
-          <CardDescription>
-            Mağaza operasyon paneline erişim için kayıt olun
-          </CardDescription>
+          <CardDescription>Mağaza operasyon paneline erişim için kayıt olun</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -80,12 +83,13 @@ export default function Register() {
                   type="text"
                   placeholder="Adınız Soyadınız"
                   value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
                   className="pl-10"
                   required
                 />
               </div>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -95,12 +99,13 @@ export default function Register() {
                   type="email"
                   placeholder="email@ornek.com"
                   value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
                   className="pl-10"
                   required
                 />
               </div>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Şifre</Label>
               <div className="relative">
@@ -110,24 +115,45 @@ export default function Register() {
                   type="password"
                   placeholder="••••••••"
                   value={formData.password}
-                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                  onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))}
                   className="pl-10"
                   required
                 />
               </div>
             </div>
+
+            {/* socialCode */}
+            <div className="space-y-2">
+              <Label htmlFor="socialCode">Sosyal Kod (socialCode) *</Label>
+              <div className="relative">
+                <IdCard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="socialCode"
+                  type="text"
+                  placeholder="örn. TEST-001"
+                  value={formData.socialCode}
+                  onChange={(e) => setFormData((p) => ({ ...p, socialCode: e.target.value }))}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Store seçimi */}
             <div className="space-y-2">
               <Label>Mağaza *</Label>
               <StoreSelector
                 value={formData.storeId}
-                onChange={(storeId) => setFormData(prev => ({ ...prev, storeId }))}
+                onChange={(storeId) => setFormData((p) => ({ ...p, storeId }))}
                 stores={mockStores}
               />
             </div>
+
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Kayıt yapılıyor..." : "Kayıt Ol"}
             </Button>
           </form>
+
           <div className="mt-4 text-center text-sm">
             <span className="text-muted-foreground">Zaten hesabınız var mı? </span>
             <Button variant="link" className="p-0" onClick={() => navigate("/auth/login")}>

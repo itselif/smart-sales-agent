@@ -12,9 +12,13 @@ interface StoreSelectorProps {
   value?: string;
   onChange: (value: string) => void;
   stores: Store[];
+  allowedStoreIds?: string[]; // Kullanıcının erişebildiği mağaza ID'leri
 }
 
-export function StoreSelector({ value, onChange, stores }: StoreSelectorProps) {
+export function StoreSelector({ value, onChange, stores, allowedStoreIds }: StoreSelectorProps) {
+  const filteredStores = allowedStoreIds 
+    ? stores.filter(store => allowedStoreIds.includes(store.id))
+    : stores;
   return (
     <Select value={value || ""} onValueChange={onChange}>
       <SelectTrigger className="w-64">
@@ -24,7 +28,7 @@ export function StoreSelector({ value, onChange, stores }: StoreSelectorProps) {
         </div>
       </SelectTrigger>
       <SelectContent>
-        {stores.map((store) => (
+        {filteredStores.map((store) => (
           <SelectItem key={store.id} value={store.id}>
             <div className="flex flex-col">
               <span className="font-medium">{store.name}</span>
