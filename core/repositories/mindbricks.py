@@ -59,7 +59,7 @@ class MindbricksStockRepository(StockRepository):
         self.list_limit = int(os.getenv("MINDBRICKS_LIST_LIMIT", "200"))
 
         self.filter_by_store_env = os.getenv("MINDBRICKS_FILTER_BY_STORE", "1") == "1"
-
+ 
         # Mağaza adı → GUID map
         self.store_map = _parse_store_map(os.getenv("MINDBRICKS_STORE_ID_MAP", ""))
 
