@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,24 +8,31 @@ import { useAppStore } from "@/lib/stores";
 import { useToast } from "@/hooks/use-toast";
 import { Building2, Lock, Mail } from "lucide-react";
 
-// .env: VITE_API_BASE=http://localhost:8000
-const API_BASE = import.meta.env.VITE_API_BASE || "";
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_BASE ||
+  "http://localhost:8000"; // <- boş bırakma, fallback dursun
 
 export default function Login() {
   const [email, setEmail] = useState("");
-  const [socialCode, setSocialCode] = useState(""); // email yerine kullanılabiliyor
+  const [socialCode, setSocialCode] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
   const navigate = useNavigate();
-  const { setUser } = useAppStore();
   const { toast } = useToast();
+  const { setUser, setCurrentStoreId, stores } = useAppStore();
 
   const canSubmit = !!password && (!!email || !!socialCode);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) {
-      toast({ title: "Hata", description: "Email ya da mağaza kodu ve şifre gerekli.", variant: "destructive" });
+      toast({
+        title: "Hata",
+        description: "Email ya da mağaza kodu ve şifre gerekli.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -43,45 +50,63 @@ export default function Login() {
 
       const body = await res.json().catch(() => ({} as any));
 
-      if (!res.ok || !body?.accessToken) {
-        // Mindbricks bazı durumlarda detail içinde errorCode/errorMessage gönderiyor
+      // BE artık token'ı her zaman body'ye koyuyor.
+      const accessToken = body?.accessToken;
+      const refreshToken = body?.refreshToken;
+
+      if (!res.ok || !accessToken) {
         const d = body?.detail || body;
         const msg =
           d?.errorMessage ||
           d?.message ||
-          (typeof d === "string" ? d : JSON.stringify(d || "Giriş başarısız"));
-
+          (typeof d === "string" ? d : "Giriş başarısız");
         toast({ title: "Giriş başarısız", description: msg, variant: "destructive" });
         return;
       }
 
-      // Tokenları sakla
-      localStorage.setItem("accessToken", body.accessToken);
-      if (body.refreshToken) localStorage.setItem("refreshToken", body.refreshToken);
+      localStorage.setItem("accessToken", accessToken);
+      if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
 
-      // Kullanıcı bilgisi varsa doldur, yoksa eldekiyle minimal obje
+      const apiUser = body?.data?.user;
       const name =
-        body?.data?.user?.fullname ||
+        apiUser?.fullname ||
         (email ? email.split("@")[0] : socialCode) ||
         "Kullanıcı";
 
+      const assignedFromApi: string[] =
+        apiUser?.assignedStoreIds ||
+        apiUser?.stores ||
+        [];
+
+      const fallbackStoreId = stores?.[0]?.id;
+      const assignedStores =
+        assignedFromApi.length > 0
+          ? assignedFromApi
+          : fallbackStoreId
+          ? [fallbackStoreId]
+          : [];
+
       setUser({
-        id: body?.data?.user?.id || "me",
+        id: apiUser?.id || "me",
         name,
         email: email || `${socialCode}@local`,
-        role: body?.data?.user?.role || "Kullanıcı",
+        role: apiUser?.role || "Kullanıcı",
+        assignedStores,
       });
+
+      if (assignedStores.length > 0) {
+        setCurrentStoreId(assignedStores[0]);
+      }
 
       toast({ title: "Giriş başarılı", description: "Dashboard'a yönlendiriliyorsunuz..." });
       navigate("/dashboard");
-    } catch (err) {
+    } catch {
       toast({ title: "Ağ hatası", description: "Sunucuya ulaşılamadı.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // email ve socialCode alanları birbirini kilitlesin (çakışmayı engelle)
   const handleEmailChange = (v: string) => {
     setEmail(v);
     if (v) setSocialCode("");

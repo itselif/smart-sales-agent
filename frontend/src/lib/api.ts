@@ -1,5 +1,24 @@
+// src/lib/api.ts
 const BASE = import.meta.env.VITE_API_BASE_URL;
 
+export interface Store {
+  id: string;
+  name: string;
+  city: string;
+  fullname?: string;
+  avatar?: string;
+  active?: boolean;
+}
+
+// ---- STORES ----
+export async function getStores(): Promise<Store[]> {
+  const r = await fetch(`${BASE}/stores/list`);
+  if (!r.ok) throw new Error("Stores fetch failed");
+  const data = await r.json();
+  return data.stores ?? [];
+}
+
+// ---- SALES ----
 export interface SalesForecast {
   next_7days: number;
   confidence: number;
@@ -24,12 +43,17 @@ export interface SalesResponse {
   store_id: string;
   analysis_period: number;
   products: SalesProduct[];
-  trend_analysis?: { 
-    weekly_pattern?: Record<string, number>;
-  };
+  trend_analysis?: { weekly_pattern?: Record<string, number> };
   ai_insights?: string;
 }
 
+export async function getSales(storeId: string): Promise<SalesResponse> {
+  const r = await fetch(`${BASE}/sales/analyze?store_id=${encodeURIComponent(storeId)}`);
+  if (!r.ok) throw new Error("Sales analysis failed");
+  return r.json();
+}
+
+// ---- STOCK ----
 export interface StockProduct {
   product_id: string;
   name?: string;
@@ -53,6 +77,13 @@ export interface StockResponse {
   total_value: number;
 }
 
+export async function getStock(storeId: string): Promise<StockResponse> {
+  const r = await fetch(`${BASE}/stock/analysis?store_id=${encodeURIComponent(storeId)}`);
+  if (!r.ok) throw new Error("Stock analysis failed");
+  return r.json();
+}
+
+// ---- REPORT / ORCHESTRATE ----
 export interface ReportBuildResponse {
   format: "html" | "pdf";
   path: string;
@@ -63,39 +94,23 @@ export interface ReportBuildResponse {
   download_url: string;
 }
 
-export type OrchestrateIntent = "sales" | "stock" | "report";
+export async function buildReport(storeId: string, request = "standart rapor"): Promise<ReportBuildResponse> {
+  const r = await fetch(`${BASE}/report/build?store_id=${encodeURIComponent(storeId)}&request=${encodeURIComponent(request)}`);
+  if (!r.ok) throw new Error("Report build failed");
+  return r.json();
+}
 
+export type OrchestrateIntent = "sales" | "stock" | "report";
 export interface OrchestrateResponse {
   intent: OrchestrateIntent;
   data?: SalesResponse | StockResponse;
-  artifacts?: { 
-    report_path?: string; 
-    format?: string; 
-  };
+  artifacts?: { report_path?: string; format?: string };
   public_url?: string;
   download_url?: string;
 }
 
-export async function getSales(storeId: string): Promise<SalesResponse> {
-  const r = await fetch(`${BASE}/sales/analyze?store_id=${encodeURIComponent(storeId)}`);
-  if (!r.ok) throw new Error('Sales analysis failed');
-  return r.json();
-}
-
-export async function getStock(storeId: string): Promise<StockResponse> {
-  const r = await fetch(`${BASE}/stock/analysis?store_id=${encodeURIComponent(storeId)}`);
-  if (!r.ok) throw new Error('Stock analysis failed');
-  return r.json();
-}
-
-export async function buildReport(storeId: string, request = 'standart rapor'): Promise<ReportBuildResponse> {
-  const r = await fetch(`${BASE}/report/build?store_id=${encodeURIComponent(storeId)}&request=${encodeURIComponent(request)}`);
-  if (!r.ok) throw new Error('Report build failed');
-  return r.json();
-}
-
 export async function orchestrate(q: string, storeId: string): Promise<OrchestrateResponse> {
   const r = await fetch(`${BASE}/orchestrate-llm?q=${encodeURIComponent(q)}&store_id=${encodeURIComponent(storeId)}`);
-  if (!r.ok) throw new Error('Orchestrate failed');
+  if (!r.ok) throw new Error("Orchestrate failed");
   return r.json();
 }

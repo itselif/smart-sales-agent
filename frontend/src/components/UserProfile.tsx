@@ -14,14 +14,14 @@ interface UserProfileProps {
 }
 
 export function UserProfile({ onClose }: UserProfileProps) {
-  const { user, setUser } = useAppStore();
+  const { user, setUser, selectedStores, setSelectedStores, stores } = useAppStore();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     storeCode: user?.storeCode || "",
     phone: user?.phone || "",
   });
-  const [selectedStores, setSelectedStores] = useState<string[]>(user?.assignedStores || []);
+  const [localSelectedStores, setLocalSelectedStores] = useState<string[]>(user?.assignedStores || []);
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -29,20 +29,13 @@ export function UserProfile({ onClose }: UserProfileProps) {
   });
   const [showPasswordForm, setShowPasswordForm] = useState(false);
 
-  const availableStores = [
-    "Mağaza A",
-    "Mağaza B",
-    "Mağaza C",
-    "Mağaza D"
-  ];
-
   if (!user) return null;
 
-  const toggleStore = (store: string) => {
-    setSelectedStores(prev =>
-      prev.includes(store)
-        ? prev.filter(s => s !== store)
-        : [...prev, store]
+  const toggleStore = (storeId: string) => {
+    setLocalSelectedStores(prev =>
+      prev.includes(storeId)
+        ? prev.filter(s => s !== storeId)
+        : [...prev, storeId]
     );
   };
 
@@ -51,8 +44,10 @@ export function UserProfile({ onClose }: UserProfileProps) {
       ...user,
       storeCode: editData.storeCode || user.storeCode,
       phone: editData.phone,
-      assignedStores: selectedStores,
+      assignedStores: localSelectedStores,
     });
+    // Dashboard'da görüntülenen mağazaları da güncelle
+    setSelectedStores(localSelectedStores);
     setIsEditing(false);
     toast({
       title: "Başarılı",
@@ -65,7 +60,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
       storeCode: user?.storeCode || "",
       phone: user?.phone || "",
     });
-    setSelectedStores(user?.assignedStores || []);
+    setLocalSelectedStores(user?.assignedStores || []);
     setIsEditing(false);
   };
 
@@ -191,25 +186,37 @@ export function UserProfile({ onClose }: UserProfileProps) {
             <div className="space-y-2">
               <Label className="text-sm font-medium">Erişim Verilen Mağazalar</Label>
               <div className="flex flex-wrap gap-2">
-                {availableStores.map(store => (
+                {stores.map(store => (
                   <Badge
-                    key={store}
-                    variant={selectedStores.includes(store) ? "default" : "outline"}
-                    onClick={() => toggleStore(store)}
-                    className="cursor-pointer"
+                    key={store.id}
+                    variant={localSelectedStores.includes(store.id) ? "default" : "outline"}
+                    onClick={() => toggleStore(store.id)}
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
                   >
-                    {store}
+                    {store.name}
                   </Badge>
                 ))}
               </div>
+              <p className="text-xs text-muted-foreground">
+                Seçtiğiniz mağazalar dashboard'da görüntülenecektir
+              </p>
             </div>
           )}
           
           <div className="flex items-center gap-3">
             <Building2 className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium">{selectedStores.length} mağaza</p>
-              <p className="text-xs text-muted-foreground">Erişim</p>
+              <p className="text-sm font-medium">
+                {localSelectedStores.length} mağaza erişimi
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {localSelectedStores.length > 0
+                  ? stores
+                      .filter(s => localSelectedStores.includes(s.id))
+                      .map(s => s.name)
+                      .join(', ')
+                  : 'Mağaza seçilmemiş'}
+              </p>
             </div>
           </div>
         </div>

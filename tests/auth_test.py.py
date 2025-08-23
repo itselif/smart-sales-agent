@@ -1,15 +1,18 @@
-# auth_test.py
-import requests
+import os
+from dotenv import load_dotenv
 
-BASE_URL = "https://auth-api-salesai1.prw.mindbricks.com"
+# .env'yı yükle
+load_dotenv()
 
-# Login bilgilerini kendine göre değiştir
-payload = {
-    "username": "admin@aadmin.com",
-    "password": "superadmin"
-}
+# Tüm environment variables'ları listeleyin
+print("All environment variables from .env:")
+for key, value in os.environ.items():
+    if key.startswith('GOOGLE') or key.startswith('GEMINI') or key.startswith('MB_'):
+        print(f"{key}: {value}")
 
-res = requests.post(f"{BASE_URL}/auth/login", json=payload)
-
-print("Status:", res.status_code)
-print("Response:", res.json())
+# Özellikle API key'i kontrol edin
+api_key = os.getenv("GOOGLE_API_KEY")
+print(f"\nGOOGLE_API_KEY: {'SET' if api_key else 'NOT SET'}")
+if api_key:
+    print(f"Key length: {len(api_key)}")
+    print(f"Key starts with: {api_key[:10]}...")

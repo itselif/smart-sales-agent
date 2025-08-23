@@ -12,14 +12,18 @@ load_dotenv()
 # ---- Mindbricks client
 from infrastructure.external.mindbricks import MindbricksClient
 
-# ---- Repo (memory ↔ Mindbricks)
-from core.repositories.memory import InMemorySalesRepository, InMemoryStockRepository
+# ---- Repo (memory ↔ Mindbricks) - güvenli import
 try:
-    # varsa iki repo da gelecek; yoksa Sales'i None bırakırız
+    from core.repositories.memory import InMemorySalesRepository, InMemoryStockRepository  # type: ignore
+except Exception:
+    InMemorySalesRepository = None  # type: ignore
+    InMemoryStockRepository = None  # type: ignore
+
+try:
     from core.repositories.mindbricks import MindbricksSalesRepository, MindbricksStockRepository  # type: ignore
 except Exception:
     MindbricksSalesRepository = None  # type: ignore
-    from core.repositories.mindbricks import MindbricksStockRepository  # type: ignore
+    MindbricksStockRepository = None  # type: ignore
 
 # ---- Ajanlar
 from core.agents.sales_agent import SalesAgent
@@ -36,70 +40,104 @@ from infrastructure.caching.cache import make_cache
 
 
 # =========================
-# LLM (yalnız plan + özet)  → OPSİYONEL
+# LLM (plan + özet) → OPSİYONEL
+# =========================
+# =========================
+# LLM (plan + özet) → REST ile (grpc yok)
 # =========================
 class _Gemini:
     def __init__(self, model: str = "gemini-1.5-pro"):
-        import google.generativeai as genai  # type: ignore
-        api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("VITE_GEMINI_API_KEY")
-        if not api_key:
-            raise RuntimeError("Gemini API key missing. Set GOOGLE_API_KEY or VITE_GEMINI_API_KEY")
-        genai.configure(api_key=api_key)
-        self._model = genai.GenerativeModel(model)
+        import httpx  # type: ignore
+        self._api_key = (
+            os.getenv("GOOGLE_API_KEY")
+            or os.getenv("VITE_GEMINI_API_KEY")
+            or os.getenv("GEMINI_API_KEY")
+        )
+        if not self._api_key:
+            raise RuntimeError("Gemini API key missing. Set GOOGLE_API_KEY or VITE_GEMINI_API_KEY or GEMINI_API_KEY")
 
-    async def _gen(self, messages: List[Dict[str, Any]]) -> str:
+        self._model = os.getenv("GEMINI_MODEL", model)
+        self._base = os.getenv("GEMINI_API_BASE", "https://generativelanguage.googleapis.com/v1")
+        self._http = httpx.AsyncClient(timeout=30.0)
+
+    async def _gen(self, prompt: str) -> str:
+        """Gemini generateContent REST çağrısı."""
+        url = f"{self._base}/models/{self._model}:generateContent?key={self._api_key}"
+        payload = {
+            "contents": [
+                {"role": "user", "parts": [{"text": prompt}]}
+            ]
+        }
         try:
-            resp = await self._model.generate_content_async(messages)
-            return getattr(resp, "text", "") or ""
-        except Exception:
+            r = await self._http.post(url, json=payload)
+            r.raise_for_status()
+            data = r.json()
+            # metni çıkar
+            try:
+                cand = (data.get("candidates") or [])[0]
+                parts = cand.get("content", {}).get("parts", [])
+                for part in parts:
+                    if "text" in part:
+                        return (part["text"] or "").strip()
+            except Exception:
+                pass
+            return ""
+        except Exception as e:
+            if os.getenv("MB_DEBUG", "0") == "1":
+                print(f"[llm-rest] generate failed: {e}")
             return ""
 
     async def plan(self, user_query: str, store_id: str) -> Dict[str, Any]:
-        system = (
-            "You are a planner. Choose EXACTLY ONE tool from this allowlist and produce a minimal JSON plan.\n"
-            "Allowed tools: sales.analyze, stock.analysis, report.build\n"
-            "Return ONLY minified JSON without backticks or commentary."
+        prompt = (
+            "You are an intent router + planner for a retail analytics assistant.\n"
+            "Decide whether to call a tool or NOT call any tool (just chat/clarify).\n\n"
+            "Allowed tools: sales.analyze, stock.analysis, report.build, none\n"
+            "Output STRICTLY a minified JSON with fields: tool (string), args (object), rationale (string<=80 chars)\n"
+            "If tool = none, DO NOT ask to call any tool. Keep args as {}.\n"
+            "When none: it's for greetings, chit-chat, or clarifying questions about missing info.\n"
+            "When report intent: use report.build. When stock intent: stock.analysis. Else: sales.analyze.\n"
+            "Respond only JSON. No backticks.\n\n"
+            f"User(Turkish): {user_query}\n"
+            f"StoreId: {store_id}\n\n"
+            "Examples:\n"
+            f'{{"tool":"none","args":{{}},"rationale":"greeting only"}}\n'
+            f'{{"tool":"report.build","args":{{"store_id":"{store_id}","format":"pdf"}},"rationale":"user asked for pdf report"}}\n'
+            f'{{"tool":"stock.analysis","args":{{"store_id":"{store_id}","product_id":"P120"}},"rationale":"specific stock question"}}\n'
+            f'{{"tool":"sales.analyze","args":{{"store_id":"{store_id}"}},"rationale":"generic sales insight"}}\n'
         )
-        user = f"""
-User query (Turkish): {user_query}
-Store id: {store_id}
-
-Examples of valid outputs:
-{{"tool":"sales.analyze","args":{{"store_id":"{store_id}"}}}}
-{{"tool":"stock.analysis","args":{{"store_id":"{store_id}","product_id":"P100"}}}}
-{{"tool":"report.build","args":{{"store_id":"{store_id}","request":"pdf raporu","format":"pdf"}}}}
-
-Rules:
-- If user asks about generating/downloading a report: tool="report.build".
-- If user asks about stock / critical / reorder or a specific product: tool="stock.analysis".
-- Else default to tool="sales.analyze".
-""".strip()
-
-        raw = await self._gen([{"role": "system", "parts": [system]}, {"role": "user", "parts": [user]}])
+        raw = await self._gen(prompt)
         if not raw:
-            return {"tool": "sales.analyze", "args": {"store_id": store_id}}
+            return {"tool": "sales.analyze", "args": {"store_id": store_id}, "rationale": "fallback"}
         return _ensure_json(raw, default={"tool": "sales.analyze", "args": {"store_id": store_id}})
 
     async def summarize(self, user_query: str, tool: str, data: Dict[str, Any], extras: Dict[str, Any]) -> str:
-        style = os.getenv("ASSISTANT_STYLE", "Kısa, açık ve kibar cevap ver. Emir kipinden kaçın.")
-        sys = (
+        style = os.getenv("ASSISTANT_STYLE", "Kısa, net, aksiyon odaklı yaz. Emir kipinden kaçın.")
+        if tool == "none":
+            prompt = (
+                "You are a Turkish assistant for retail analytics. "
+                "User wrote a greeting or a short chat/clarify input. "
+                "Reply briefly, friendly, and guide user to actions (sales, stock, report). "
+                "No code, no JSON, no tool suggestions. Keep it <= 2 short sentences.\n\n"
+                f"Kullanıcı: {user_query}\n"
+                f"Üslup: {style}\n"
+            )
+            txt = await self._gen(prompt)
+            return txt or "Merhaba! Satış özeti, stok analizi veya rapor üretimi için isteğini yazabilirsin."
+
+        sys_user_prompt = (
             "You are a Turkish assistant for retail analytics. "
-            "Always answer in Turkish, short and clear. Never show JSON or code fences."
+            "Answer concise, action-oriented. Do not greet. No chit-chat. No code fences.\n\n"
+            f"Kullanıcı isteği: {user_query}\n"
+            f"Seçilen tool: {tool}\n"
+            f"Özetlenecek veri: {json.dumps(_compact_payload(tool, data), ensure_ascii=False)}\n"
+            f"Üslup: {style}\n\n"
+            "Kurallar:\n"
+            "- Sonuç cümleleri kısa ve net olsun.\n"
+            "- weekly_trend < -0.05 ve total_sold düşük olanları 'az satan & düşen' diye belirt.\n"
+            "- Link varsa bir kez, yalın biçimde ver.\n"
         )
-        user = f"""
-Kullanıcı isteği: {user_query}
-Seçilen tool: {tool}
-Özetlenecek veri: {json.dumps(_compact_payload(tool, data), ensure_ascii=False)}
-Ek kurallar: {style}
-
-Notlar:
-- 'az satan & popülaritesi düşen' için weekly_trend < -0.05 ve total_sold düşük olanları vurgula.
-- Rapor linki varsa bir kez ver.
-""".strip()
-
-        txt = await self._gen([{"role": "system", "parts": [sys]}, {"role": "user", "parts": [user]}])
+        txt = await self._gen(sys_user_prompt)
         return txt.strip() if txt else _deterministic_summary(tool, data)
-
 
 # =========================
 # Yardımcılar
@@ -120,24 +158,38 @@ def _ensure_json(raw: str, default: Dict[str, Any]) -> Dict[str, Any]:
     return default
 
 
+def _tl(amount: float) -> str:
+    """US -> TR sayı biçimi: 82,493.48 -> 82.493,48"""
+    s = f"{amount:,.2f}"
+    return s.replace(",", "X").replace(".", ",").replace("X", ".")
+
+
 def _compact_payload(tool: str, data: Dict[str, Any]) -> Dict[str, Any]:
     if tool == "sales.analyze":
         prods = data.get("products") or []
-        top = sorted(prods, key=lambda p: float(p.get("total_revenue", 0.0)), reverse=True)[:3]
-        lows = sorted(prods, key=lambda p: int(p.get("total_sold", 0)))[:3]
+        if not prods:
+            return {"count": 0, "top_by_revenue": [], "min_seller": None, "total_revenue_fmt": _tl(0.0)}
+        top_rev = max(prods, key=lambda p: float(p.get("total_revenue", 0.0)))
+        min_sold = min(prods, key=lambda p: int(p.get("total_sold", 0)))
+        total_rev = sum(float(p.get("total_revenue", 0.0)) for p in prods)
         return {
             "count": len(prods),
-            "top_by_revenue": [
-                {"id": p.get("product_id"), "name": p.get("product_name") or p.get("name"),
-                 "sold": p.get("total_sold"), "rev": p.get("total_revenue"), "trend": p.get("weekly_trend")}
-                for p in top
-            ],
-            "low_sellers": [
-                {"id": p.get("product_id"), "name": p.get("product_name") or p.get("name"),
-                 "sold": p.get("total_sold"), "trend": p.get("weekly_trend")}
-                for p in lows
-            ],
+            "top_by_revenue": [{
+                "id": top_rev.get("product_id"),
+                "name": top_rev.get("product_name") or top_rev.get("name"),
+                "sold": top_rev.get("total_sold"),
+                "rev": top_rev.get("total_revenue"),
+                "trend": top_rev.get("weekly_trend"),
+            }],
+            "min_seller": {
+                "id": min_sold.get("product_id"),
+                "name": min_sold.get("product_name") or min_sold.get("name"),
+                "sold": min_sold.get("total_sold"),
+                "trend": min_sold.get("weekly_trend"),
+            },
+            "total_revenue_fmt": _tl(total_rev),
         }
+
     if tool in ("stock.analysis", "stock.product"):
         prods = data.get("products") or []
         crit = [p for p in prods if p.get("is_critical")]
@@ -146,52 +198,81 @@ def _compact_payload(tool: str, data: Dict[str, Any]) -> Dict[str, Any]:
             "count": len(prods),
             "critical_count": len(crit),
             "sample": [
-                {"id": p.get("product_id"),
-                 "name": p.get("name") or p.get("product_name"),
-                 "onhand": p.get("current_stock"),
-                 "avg_daily": p.get("avg_daily_sales"),
-                 "eta": p.get("estimated_days_left"),
-                 "reorder": p.get("reorder_qty_suggestion")}
+                {
+                    "id": p.get("product_id"),
+                    "name": p.get("name") or p.get("product_name"),
+                    "onhand": p.get("current_stock"),
+                    "avg_daily": p.get("avg_daily_sales"),
+                    "eta": p.get("estimated_days_left"),
+                    "reorder": p.get("reorder_qty_suggestion"),
+                }
                 for p in sample
             ],
         }
+
     if tool == "report.build":
         return {"format": data.get("format"), "public_url": data.get("public_url")}
+
     return {"ok": True}
 
 
 def _pick_product(products: List[Dict[str, Any]], product_id: Optional[str], name: Optional[str]) -> Optional[Dict[str, Any]]:
     if not products:
         return None
+
+    # pydantic vs. olursa normalize et
+    norm: List[Dict[str, Any]] = []
+    for p in products:
+        if isinstance(p, dict):
+            norm.append(p)
+            continue
+        try:
+            norm.append(p.model_dump() if hasattr(p, "model_dump") else dict(p))
+        except Exception:
+            continue
+
+    if not norm:
+        return None
+
     if product_id:
         pid = str(product_id).upper().replace("P", "")
-        for p in products:
+        for p in norm:
             cand = str(p.get("product_id") or "").upper().replace("P", "")
             if pid == cand:
                 return p
     if name:
         q = (name or "").strip().lower()
         if len(q) >= 3:
-            cands = [p for p in products if q in str(p.get("name") or p.get("product_name") or "").lower()]
+            cands = [p for p in norm if q in str(p.get("name") or p.get("product_name") or "").lower()]
             if cands:
                 return sorted(cands, key=lambda x: x.get("current_stock", 0), reverse=True)[0]
     return None
 
 
 def _deterministic_summary(tool: str, data: Dict[str, Any]) -> str:
+    status = data.get("status")
+
     if tool == "sales.analyze":
         prods = data.get("products") or []
+        if status == "no_data" or not prods:
+            return "Bu tarih aralığında satış verisi bulunamadı."
         total = sum(float(p.get("total_revenue", 0)) for p in prods)
-        top = sorted(prods, key=lambda p: float(p.get("total_revenue", 0)), reverse=True)[:1]
-        name = (top[0].get("product_name") or top[0].get("name")) if top else "-"
-        return f"Satış özeti hazır. Ürün: {len(prods)} • Toplam ciro: {total:,.2f} TL • En çok satan: {name}".replace(",", ".")
+        top = max(prods, key=lambda p: float(p.get("total_revenue", 0)))
+        name = (top.get("product_name") or top.get("name")) if top else "-"
+        return f"Satış özeti hazır. Ürün: {len(prods)} • Toplam ciro: {_tl(total)} TL • En çok ciro: {name}"
+
     if tool.startswith("stock"):
         prods = data.get("products") or []
         crit = [p for p in prods if p.get("is_critical")]
         return f"Stok özeti hazır. {len(prods)} ürün, {len(crit)} kritik."
+
     if tool == "report.build":
-        url = data.get("public_url") or ""
-        return f"Rapor hazır. İndirme: {url}" if url else "Rapor oluşturuldu."
+        url = (data.get("public_url") or "").strip()
+        return "Rapor hazır. İndirme bağlantısı mevcut." if url else "Rapor oluşturuldu."
+
+    if tool == "none":
+        return "Merhaba! Satış, stok veya rapor için nasıl yardımcı olabilirim?"
+
     return "İstek işlendi."
 
 
@@ -199,6 +280,7 @@ def _deterministic_summary(tool: str, data: Dict[str, Any]) -> str:
 # Orchestrator (planner/executor)
 # =========================
 CACHE_TTL = int(os.getenv("CACHE_TTL_SECONDS", "600"))
+
 
 class Orchestrator:
     """
@@ -208,6 +290,7 @@ class Orchestrator:
 
     def __init__(self) -> None:
         self.cache = make_cache()
+        self.debug = (os.getenv("MB_DEBUG", "0") == "1")
 
         # Mindbricks client
         try:
@@ -218,18 +301,21 @@ class Orchestrator:
         # Veri kaynağı seçimi (repo)
         use_mb_data = os.getenv("USE_MINDBRICKS_DATA", "1") == "1"
         if use_mb_data and self.mb_client:
-            # SALES (Mindbricks repo implementasyonu varsa kullan; yoksa memory)
-            if MindbricksSalesRepository:  # type: ignore
+            # SALES
+            if MindbricksSalesRepository:
                 sales_repo = MindbricksSalesRepository(self.mb_client)  # type: ignore
             else:
-                sales_repo = InMemorySalesRepository(os.getenv("SALES_JSON_PATH", "data/sales.json"))
-            # STOCK Mindbricks
-            stock_repo = MindbricksStockRepository(self.mb_client)  # type: ignore
+                sales_repo = InMemorySalesRepository(os.getenv("SALES_JSON_PATH", "data/sales.json")) if InMemorySalesRepository else None  # type: ignore
+            # STOCK
+            if MindbricksStockRepository:
+                stock_repo = MindbricksStockRepository(self.mb_client)  # type: ignore
+            else:
+                stock_repo = InMemoryStockRepository(os.getenv("STOCK_JSON_PATH", "data/stock.json")) if InMemoryStockRepository else None  # type: ignore
         else:
-            sales_repo = InMemorySalesRepository(os.getenv("SALES_JSON_PATH", "data/sales.json"))
-            stock_repo = InMemoryStockRepository(os.getenv("STOCK_JSON_PATH", "data/stock.json"))
+            sales_repo = InMemorySalesRepository(os.getenv("SALES_JSON_PATH", "data/sales.json")) if InMemorySalesRepository else None  # type: ignore
+            stock_repo = InMemoryStockRepository(os.getenv("STOCK_JSON_PATH", "data/stock.json")) if InMemoryStockRepository else None  # type: ignore
 
-        # Ajanlar (daima bizim ajanlar hesaplıyor)
+        # Ajanlar
         self.sales_agent = SalesAgent(sales_repo=sales_repo)
         self.stock_agent = StockAgent(sales_agent=self.sales_agent, stock_repo=stock_repo)
         self.report_agent = ReportAgent()
@@ -239,10 +325,12 @@ class Orchestrator:
         self.stock_svc = StockService(self.stock_agent, mb=self.mb_client)
         self.report_svc = ReportService(self.report_agent, mb=self.mb_client)
 
-        # LLM opsiyonel (yoksa kural-tabanlı planner + deterministic summary)
+        # LLM opsiyonel
         try:
             self.llm = _Gemini(model=os.getenv("GEMINI_MODEL", "gemini-1.5-pro"))
-        except Exception:
+        except Exception as e:
+            if self.debug:
+                print(f"[orch] LLM disabled: {e}")
             self.llm = None
 
         # Tool registry
@@ -283,7 +371,7 @@ class Orchestrator:
             "spec": res.get("spec"),
         }
 
-    # ---- LLM yoksa basit kural tabanlı plan ----
+    # ---- LLM yoksa basit kural tabanlı plan (opsiyonel fallback) ----
     def _rule_plan(self, user_query: str, store_id: str) -> Dict[str, Any]:
         q = (user_query or "").lower()
         if any(k in q for k in ["rapor", "pdf", "çıktı", "download", "indir"]):
@@ -300,19 +388,45 @@ class Orchestrator:
     # ---- Planı uygula ----
     async def run(self, user_query: str, store_id: str, user_request: Optional[str] = None) -> Dict[str, Any]:
         # 1) Plan
-        plan = await self.llm.plan(user_query, store_id) if self.llm else self._rule_plan(user_query, store_id)
+        planner_used = "rule"
+        try:
+            if self.llm:
+                plan = await self.llm.plan(user_query, store_id)
+                planner_used = "gemini"
+            else:
+                plan = self._rule_plan(user_query, store_id)
+        except Exception as e:
+            if self.debug:
+                print(f"[orch] plan failed -> rule fallback: {e}")
+            plan = self._rule_plan(user_query, store_id)
+            planner_used = "rule"
 
-        tool = plan.get("tool", "")
-        args = plan.get("args", {}) or {}
+        tool = (plan.get("tool") or "").strip()
+        args = (plan.get("args") or {})
         args["store_id"] = store_id  # emniyet
 
+        if self.debug:
+            print(f"[orch] plan={plan} (planner={planner_used})")
+
+        # 2) 'none' → hiçbir tool çalıştırma, sohbet yanıtı üret
+        if tool == "none":
+            reply = await self.llm.summarize(user_query, tool, {}, {}) if self.llm else _deterministic_summary("none", {})
+            return {
+                "intent": "none",
+                "data": {},
+                "artifacts": {},
+                "reply": reply,
+                "plan": plan,
+                "meta": {"planner": planner_used, "summarizer": "gemini" if self.llm else "deterministic", "cached": False},
+            }
+
+        # Tanınmayan tool → varsayılan satış analizi
         if tool not in self.tools:
             tool = "sales.analyze"
 
-        # 2) Çalıştır
+        # 3) Tool'u çalıştır
         data: Dict[str, Any]
         artifacts = {"report_path": "", "format": "none"}
-
         if tool == "report.build":
             if user_request:
                 args["request"] = user_request
@@ -322,7 +436,7 @@ class Orchestrator:
         else:
             data = await self.tools[tool](**args)
 
-        # 3) Tek ürün istenmişse daralt
+        # 4) Tek ürün istenmişse daralt (stok)
         if tool == "stock.analysis" and ("product_id" in args or "name" in args or "product_name" in args):
             prod = _pick_product(
                 data.get("products") or [],
@@ -335,8 +449,21 @@ class Orchestrator:
         else:
             tool_for_summary = tool
 
-        # 4) Özet
-        reply = await self.llm.summarize(user_query, tool_for_summary, data, {}) if self.llm else _deterministic_summary(tool_for_summary, data)
+        # 5) Özet
+        summarizer_used = "deterministic"
+        try:
+            if self.llm:
+                reply = await self.llm.summarize(user_query, tool_for_summary, data, {})
+                summarizer_used = "gemini" if reply else "deterministic"
+                if not reply:
+                    reply = _deterministic_summary(tool_for_summary, data)
+            else:
+                reply = _deterministic_summary(tool_for_summary, data)
+        except Exception as e:
+            if self.debug:
+                print(f"[orch] summarize failed -> deterministic: {e}")
+            reply = _deterministic_summary(tool_for_summary, data)
+            summarizer_used = "deterministic"
 
         return {
             "intent": tool.replace(".", "_"),
@@ -344,6 +471,11 @@ class Orchestrator:
             "artifacts": artifacts,
             "reply": reply,
             "plan": plan,
+            "meta": {
+                "planner": planner_used,
+                "summarizer": summarizer_used,
+                "cached": bool(data.get("cached")),
+            },
         }
 
 
@@ -353,9 +485,9 @@ async def run_orchestrator(user_query: str, store_id: str, user_request: Optiona
     return await orch.run(user_query, store_id, user_request)
 
 
-# CLI
+# CLI (quick demo)
 if __name__ == "__main__":
     async def _demo():
-        out = await run_orchestrator("Bu hafta az satan ürün hangisi?", "ISTANBUL_AVM")
+        out = await run_orchestrator("Selam.", "ISTANBUL_AVM")
         print(json.dumps(out, ensure_ascii=False, indent=2))
     asyncio.run(_demo())

@@ -1,4 +1,3 @@
-# api/main.py
 from __future__ import annotations
 
 import os
@@ -23,6 +22,7 @@ from core.services.report_service import ReportService
 # Mindbricks
 from infrastructure.external.mindbricks import MindbricksClient
 from core.repositories.mindbricks import MindbricksStockRepository
+from core.repositories.mindbricks_sales import MindbricksSalesRepository
 from api.auth_proxy import router as auth_router
 
 # ========== .env ==========
@@ -75,14 +75,6 @@ app.state.report_svc: Optional[ReportService] = None
 app.state.report_dir = str(REPORT_DIR)
 
 # ========== Startup ==========
-# api/main.py startup event'ine ekle:
-if app.state.mb_client:
-    from core.repositories.mindbricks_sales import MindbricksSalesRepository
-    sales_repo = MindbricksSalesRepository(app.state.mb_client)
-else:
-    sales_repo = None  # veya fallback repository
-
-sales_agent = SalesAgent(sales_repo=sales_repo)  # ARTIK ZORUNLU
 @app.on_event("startup")
 async def _startup() -> None:
     # Mindbricks client'ı yalnızca gerekli koşullar sağlanırsa kur
@@ -94,9 +86,13 @@ async def _startup() -> None:
               f"(MB_ACTIVE={MB_ACTIVE}, suffix={'OK' if MB_SUFFIX else 'MISSING'}, token={'OK' if MB_TOKEN else 'MISSING'})")
         app.state.mb_client = None
 
-    # Lokal ajanları oluştur
-    sales_agent = SalesAgent()
+    # Sales agent için repository bağlantısı
+    sales_repo = None
+    if app.state.mb_client:
+        sales_repo = MindbricksSalesRepository(app.state.mb_client)
     
+    sales_agent = SalesAgent(sales_repo=sales_repo)
+
     # Stock agent için repository bağlantısı
     stock_repo = None
     if app.state.mb_client:
@@ -114,6 +110,10 @@ async def _startup() -> None:
     )
 
 # ========== Endpoints ==========
+@app.get("/")
+async def root():
+    return {"status": "ok", "message": "StorePilot API çalışıyor"}
+
 @app.get("/healthz")
 async def healthz():
     # healthz üzerinde env'yi net göster
@@ -153,6 +153,38 @@ async def report_build(store_id: str = Query(...), request: str = "standart rapo
             res["public_url"] = f"/reports/{fname}"
             res["download_url"] = f"/report/download?name={fname}"
     return res
+
+@app.get("/stores/list")
+async def stores_list():
+    """
+    Mindbricks storemanagement /stores listesini FE için normalize döner.
+    """
+    if not app.state.mb_client:
+        # MB yoksa minimal mock (istersen boş dizi da dönebilirsin)
+        return {"stores": []}
+
+    service = os.getenv("MINDBRICKS_STORE_SERVICE", "storemanagement")
+    path = os.getenv("MINDBRICKS_STORES_LIST_PATH", "/stores")
+
+    try:
+        raw = await app.state.mb_client.get_json(service, path, params={"limit": 100})
+        items = raw.get("stores") or raw.get("data") or raw.get("items") or []
+        # FE'nin beklediği forma normalize et
+        stores = [
+            {
+                "id": it.get("id") or it.get("_id"),
+                "name": it.get("name"),
+                "fullname": it.get("fullname") or it.get("name"),
+                "city": it.get("city") or "",
+                "avatar": it.get("avatar") or "",
+                "active": bool(it.get("active", True)),
+            }
+            for it in items
+            if it.get("isActive", True)  # yumuşak silinmişleri ele
+        ]
+        return {"stores": stores}
+    except Exception as e:
+        return {"stores": [], "error": str(e)}
 
 @app.get("/report/download")
 async def report_download(name: str = Query(...)):

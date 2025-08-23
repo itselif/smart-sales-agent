@@ -1,29 +1,37 @@
+// src/pages/Dashboard.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { StoreSelector } from "@/components/StoreSelector";
+import { MultiStoreSelector } from "@/components/MultiStoreSelector";
 import { KpiCard } from "@/components/KpiCard";
 import { WeeklyPatternChart } from "@/components/WeeklyPatternChart";
 import { SalesTable } from "@/components/SalesTable";
 import { StockTable } from "@/components/StockTable";
 import { ChatBox } from "@/components/ChatBox";
-import { useAppStore, mockStores } from "@/lib/stores";
+import { useAppStore } from "@/lib/stores";
 import { useSales, useStock, useBuildReport } from "@/lib/hooks";
+import { useItems, useAlerts } from "@/hooks/useInventoryQueries";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Building2, 
-  FileText, 
-  MessageSquare, 
-  TrendingUp, 
-  Package, 
+import {
+  Building2,
+  FileText,
+  MessageSquare,
+  TrendingUp,
+  Package,
   AlertTriangle,
   DollarSign,
   BarChart3,
   Target,
   LogOut,
-  User
+  User,
+  Plus,
+  ArrowUpDown,
+  Bell,
 } from "lucide-react";
 import { UserProfile } from "@/components/UserProfile";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -31,27 +39,60 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("sales");
   const [showUserProfile, setShowUserProfile] = useState(false);
-  const { user, storeId, setStoreId, setUser } = useAppStore();
+
+  const {
+    user,
+    stores,
+    currentStoreId,
+    setCurrentStoreId,
+    setUser,
+    selectedStores,
+    setSelectedStores,
+  } = useAppStore();
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
   // API hooks
-  const { data: salesData, isLoading: salesLoading, error: salesError } = useSales(storeId || "");
-  const { data: stockData, isLoading: stockLoading, error: stockError } = useStock(storeId || "");
+  const { data: salesData, isLoading: salesLoading, error: salesError } = useSales(currentStoreId || "");
+  const { data: stockData, isLoading: stockLoading, error: stockError } = useStock(currentStoreId || "");
   const { mutate: buildReport, isPending: reportPending } = useBuildReport();
 
+  // Inventory hooks
+  const { data: itemsData, isLoading: itemsLoading } = useItems({
+    storeId: currentStoreId || "",
+    page: 1,
+    size: 10,
+  });
+  const { data: alertsData, isLoading: alertsLoading } = useAlerts({
+    storeId: currentStoreId || "",
+    onlyOpen: true,
+  });
+
+  // İlk yönlendirme ve varsayılan seçimler
   useEffect(() => {
     if (!user) {
       navigate("/auth/login");
+      return;
     }
-  }, [user, navigate]);
+
+    // Kullanıcı mağaza erişimleri -> başlangıç seçimi
+    if (user.assignedStores?.length && selectedStores.length === 0) {
+      setSelectedStores(user.assignedStores);
+    }
+
+    // currentStoreId yoksa ilk mağazayı ata
+    if (!currentStoreId && (user.assignedStores?.[0] || stores?.[0]?.id)) {
+      setCurrentStoreId(user.assignedStores?.[0] ?? stores[0].id);
+    }
+  }, [user, navigate, selectedStores.length, setSelectedStores, currentStoreId, setCurrentStoreId, stores]);
 
   const handleStoreChange = (newStoreId: string) => {
-    setStoreId(newStoreId);
+    setCurrentStoreId(newStoreId);
   };
 
   const handleBuildReport = () => {
-    if (!storeId) {
+    if (!currentStoreId) {
       toast({
         title: "Hata",
         description: "Rapor oluşturmak için mağaza seçin",
@@ -61,10 +102,10 @@ export default function Dashboard() {
     }
 
     buildReport(
-      { storeId, request: "haftalık satış ve stok raporu" },
+      { storeId: currentStoreId, request: "haftalık satış ve stok raporu" },
       {
         onSuccess: (response) => {
-          const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+          const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
           window.open(baseUrl + response.public_url, "_blank");
           toast({
             title: "Rapor oluşturuldu",
@@ -84,40 +125,58 @@ export default function Dashboard() {
 
   const handleLogout = () => {
     setUser(null);
-    setStoreId(null);
+    setCurrentStoreId(null);
     navigate("/auth/login");
   };
 
   const getSalesKpis = () => {
-    if (!salesData?.products) return { totalProducts: 0, totalRevenue: 0, avgConfidence: 0 };
-    
+    if (!salesData?.products || salesData.products.length === 0) {
+      return { totalProducts: 0, totalRevenue: 0, avgConfidence: 0 };
+    }
     const totalProducts = salesData.products.length;
     const totalRevenue = salesData.products.reduce((sum, p) => sum + p.total_revenue, 0);
-    const avgConfidence = salesData.products.reduce((sum, p) => sum + p.sales_forecast.confidence, 0) / totalProducts;
-    
+    const avgConfidence =
+      salesData.products.reduce((sum, p) => sum + p.sales_forecast.confidence, 0) / totalProducts;
+
     return { totalProducts, totalRevenue, avgConfidence };
   };
 
   const getStockKpis = () => {
     if (!stockData) return { totalValue: 0, criticalCount: 0 };
-    
+
     return {
       totalValue: stockData.total_value,
       criticalCount: stockData.critical_products.length,
     };
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('tr-TR', {
-      style: 'currency',
-      currency: 'TRY',
-    }).format(amount);
+  const getInventoryKpis = () => {
+    if (!itemsData?.items) return { totalItems: 0, totalValue: 0, lowStockCount: 0 };
+
+    const totalItems = itemsData.total;
+    const totalValue = itemsData.items.reduce((sum, item) => sum + (item.price * item.stock), 0);
+    const lowStockCount = itemsData.items.filter(
+      (item) => item.reorderLevel && item.stock <= item.reorderLevel
+    ).length;
+
+    return { totalItems, totalValue, lowStockCount };
   };
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(amount);
 
   if (!user) return null;
 
   const salesKpis = getSalesKpis();
   const stockKpis = getStockKpis();
+  const inventoryKpis = getInventoryKpis();
+
+  // Kullanıcının eriştiği mağazalar (yoksa tüm mağazalar)
+  const allowedStoreIds = user.assignedStores?.length
+    ? user.assignedStores
+    : stores.map((s) => s.id);
+
+  const allowedStores = stores.filter((s) => allowedStoreIds.includes(s.id));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -130,14 +189,23 @@ export default function Dashboard() {
                 <Building2 className="h-8 w-8 text-primary" />
                 <h1 className="text-2xl font-bold">StorePilot</h1>
               </div>
-              <StoreSelector
-                value={storeId || ""}
-                onChange={handleStoreChange}
-                stores={mockStores}
-                allowedStoreIds={user?.assignedStores}
-              />
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-muted-foreground">Aktif Mağaza:</span>
+                  <StoreSelector
+                    value={currentStoreId || ""}
+                    onChange={handleStoreChange}
+                    stores={allowedStores}
+                    allowedStoreIds={allowedStoreIds}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-muted-foreground">Görüntülenen Mağazalar:</span>
+                  <MultiStoreSelector />
+                </div>
+              </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <Dialog open={showUserProfile} onOpenChange={setShowUserProfile}>
                 <DialogTrigger asChild>
@@ -150,27 +218,16 @@ export default function Dashboard() {
                   <UserProfile onClose={() => setShowUserProfile(false)} />
                 </DialogContent>
               </Dialog>
-              
-              <Button
-                onClick={handleBuildReport}
-                disabled={reportPending || !storeId}
-                variant="outline"
-              >
+
+              <Button onClick={handleBuildReport} disabled={reportPending || !currentStoreId} variant="outline">
                 <FileText className="h-4 w-4 mr-2" />
                 {reportPending ? "Oluşturuluyor..." : "Rapor Oluştur"}
               </Button>
-              <Button
-                onClick={() => setActiveTab("chat")}
-                variant="outline"
-              >
+              <Button onClick={() => setActiveTab("chat")} variant="outline">
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Chat
               </Button>
-              <Button
-                onClick={handleLogout}
-                variant="ghost"
-                className="flex items-center gap-2"
-              >
+              <Button onClick={handleLogout} variant="ghost" className="flex items-center gap-2">
                 <LogOut className="h-4 w-4" />
                 Çıkış
               </Button>
@@ -181,17 +238,44 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="px-6 py-6">
-        {!storeId && (
+        {!currentStoreId && (
           <Alert className="mb-6">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              Lütfen analitiği görüntülemek için yukarıdan bir mağaza seçin.
+              Lütfen detaylı analiz için yukarıdan bir aktif mağaza seçin.
             </AlertDescription>
           </Alert>
         )}
 
+        {selectedStores.length > 0 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Seçili Mağazalar
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {stores
+                  .filter((s) => selectedStores.includes(s.id))
+                  .map((s) => (
+                    <Badge key={s.id} variant="outline" className="px-3 py-1">
+                      {s.name} - {s.city}
+                      {s.id === currentStoreId && (
+                        <span className="ml-2 text-xs bg-primary text-primary-foreground px-1 rounded">
+                          Aktif
+                        </span>
+                      )}
+                    </Badge>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="sales" className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
               Satışlar
@@ -199,6 +283,10 @@ export default function Dashboard() {
             <TabsTrigger value="stock" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               Stok
+            </TabsTrigger>
+            <TabsTrigger value="inventory" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Ürün Yönetimi
             </TabsTrigger>
             <TabsTrigger value="chat" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
@@ -243,9 +331,7 @@ export default function Dashboard() {
             <WeeklyPatternChart data={salesData?.trend_analysis?.weekly_pattern} />
 
             {/* Sales Table */}
-            {salesData?.products && (
-              <SalesTable products={salesData.products} />
-            )}
+            {salesData?.products && <SalesTable products={salesData.products} />}
           </TabsContent>
 
           {/* Stock Tab */}
@@ -278,20 +364,132 @@ export default function Dashboard() {
 
             {/* Critical Stock Table */}
             {stockData?.critical_products && stockData.critical_products.length > 0 && (
-              <StockTable
-                products={stockData.critical_products}
-                title="Kritik Stok Durumu"
-                variant="critical"
-              />
+              <StockTable products={stockData.critical_products} title="Kritik Stok Durumu" variant="critical" />
             )}
 
             {/* All Stock Table */}
-            {stockData?.products && (
-              <StockTable
-                products={stockData.products}
-                title="Tüm Stok Durumu"
-                variant="all"
+            {stockData?.products && <StockTable products={stockData.products} title="Tüm Stok Durumu" variant="all" />}
+          </TabsContent>
+
+          {/* Inventory Management Tab */}
+          <TabsContent value="inventory" className="space-y-6">
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Stok Yönetimi</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button onClick={() => navigate("/stock/products")} className="flex items-center gap-2 h-20" variant="outline">
+                    <Plus className="h-6 w-6" />
+                    <div className="text-left">
+                      <div className="font-medium">Ürün Yönetimi</div>
+                      <div className="text-sm text-muted-foreground">Ürün ekle, düzenle</div>
+                    </div>
+                  </Button>
+
+                  <Button onClick={() => navigate("/stock/movements")} className="flex items-center gap-2 h-20" variant="outline">
+                    <ArrowUpDown className="h-6 w-6" />
+                    <div className="text-left">
+                      <div className="font-medium">Stok Hareketleri</div>
+                      <div className="text-sm text-muted-foreground">Giriş, çıkış kayıtları</div>
+                    </div>
+                  </Button>
+
+                  <Button onClick={() => navigate("/stock/alerts")} className="flex items-center gap-2 h-20" variant="outline">
+                    <Bell className="h-6 w-6" />
+                    <div className="text-left">
+                      <div className="font-medium">Stok Uyarıları</div>
+                      <div className="text-sm text-muted-foreground">Kritik stok seviyesi</div>
+                    </div>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <KpiCard
+                title="Toplam Ürün"
+                value={itemsLoading ? "..." : inventoryKpis.totalItems}
+                icon={Package}
+                subtitle="Mağazada kayıtlı ürün sayısı"
               />
+              <KpiCard
+                title="Toplam Stok Değeri"
+                value={itemsLoading ? "..." : formatCurrency(inventoryKpis.totalValue)}
+                icon={DollarSign}
+                subtitle="Mevcut stok toplam değeri"
+              />
+              <KpiCard
+                title="Düşük Stok Uyarısı"
+                value={alertsLoading ? "..." : (alertsData?.items?.length || 0)}
+                icon={AlertTriangle}
+                subtitle="Kritik stok seviyesindeki ürünler"
+                trend={inventoryKpis.lowStockCount > 0 ? "down" : "neutral"}
+              />
+            </div>
+
+            {/* Recent Items */}
+            {itemsData?.items && itemsData.items.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Son Eklenen Ürünler</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {itemsData.items.slice(0, 5).map((item: any) => (
+                      <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex flex-col">
+                          <span className="font-medium">{item.name}</span>
+                          <span className="text-sm text-muted-foreground">SKU: {item.sku}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-medium">{formatCurrency(item.price)}</div>
+                          <div
+                            className={`text-sm ${
+                              item.reorderLevel && item.stock <= item.reorderLevel ? "text-destructive" : "text-muted-foreground"
+                            }`}
+                          >
+                            Stok: {item.stock}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Low Stock Alerts */}
+            {alertsData?.items && alertsData.items.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                    Kritik Stok Uyarıları
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {alertsData.items.slice(0, 5).map((alert: any) => (
+                      <div
+                        key={alert.itemId}
+                        className="flex items-center justify-between p-3 border border-destructive/20 rounded-lg bg-destructive/5"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">{alert.name}</span>
+                          <span className="text-sm text-muted-foreground">SKU: {alert.sku}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-destructive font-medium">Mevcut: {alert.stock}</div>
+                          <div className="text-sm text-muted-foreground">Kritik: {alert.reorderLevel}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
 
