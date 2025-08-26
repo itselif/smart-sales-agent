@@ -28,10 +28,6 @@ export default function Register() {
   const { toast } = useToast();
   const { setUser, setCurrentStoreId, stores } = useAppStore();
 
-  const selectableStores = useMemo(
-    () => (stores || []).filter((s) => s?.id && s?.name),
-    [stores]
-  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -217,8 +213,8 @@ export default function Register() {
               <StoreSelector
                 value={formData.storeId}
                 onChange={(storeId) => setFormData((p) => ({ ...p, storeId }))}
-                stores={selectableStores}
-                allowedStoreIds={selectableStores.map((s) => s.id)}
+                // Eğer erişimi kısıtlamak istersen:
+                // allowedStoreIds={stores.map(s => s.id)}
               />
             </div>
 

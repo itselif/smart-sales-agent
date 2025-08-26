@@ -25,6 +25,7 @@ from core.repositories.mindbricks import MindbricksStockRepository
 from core.repositories.mindbricks_sales import MindbricksSalesRepository
 from api.auth_proxy import router as auth_router
 
+
 # ========== .env ==========
 # Proje kökünden .env'yi YÜKLE ve var olan env'yi override et
 ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
@@ -156,35 +157,49 @@ async def report_build(store_id: str = Query(...), request: str = "standart rapo
 
 @app.get("/stores/list")
 async def stores_list():
-    """
-    Mindbricks storemanagement /stores listesini FE için normalize döner.
-    """
     if not app.state.mb_client:
-        # MB yoksa minimal mock (istersen boş dizi da dönebilirsin)
         return {"stores": []}
 
-    service = os.getenv("MINDBRICKS_STORE_SERVICE", "storemanagement")
-    path = os.getenv("MINDBRICKS_STORES_LIST_PATH", "/stores")
+    service = os.getenv("MINDBRICKS_STORE_SERVICE", "storemanagement").strip() or "storemanagement"
+    env_path = (os.getenv("MINDBRICKS_STORES_LIST_PATH") or "/stores").strip()
 
-    try:
-        raw = await app.state.mb_client.get_json(service, path, params={"limit": 100})
-        items = raw.get("stores") or raw.get("data") or raw.get("items") or []
-        # FE'nin beklediği forma normalize et
-        stores = [
-            {
-                "id": it.get("id") or it.get("_id"),
-                "name": it.get("name"),
-                "fullname": it.get("fullname") or it.get("name"),
-                "city": it.get("city") or "",
-                "avatar": it.get("avatar") or "",
-                "active": bool(it.get("active", True)),
-            }
-            for it in items
-            if it.get("isActive", True)  # yumuşak silinmişleri ele
-        ]
-        return {"stores": stores}
-    except Exception as e:
-        return {"stores": [], "error": str(e)}
+    # Güvenli fallback sırası
+    candidate_paths = []
+    # 1) env ne diyorsa onu ekle
+    candidate_paths.append(env_path if env_path.startswith("/") else f"/{env_path}")
+    # 2) doğru olanı mutlaka dene
+    if "/stores" not in candidate_paths:
+        candidate_paths.append("/stores")
+    # 3) bazı eski şemalar için tekil de dene
+    if "/store" not in candidate_paths:
+        candidate_paths.append("/store")
+
+    last_err = None
+    for path in candidate_paths:
+        try:
+            raw = await app.state.mb_client.get_json(
+                service, path, params={"limit": 100}
+            )
+            items = raw.get("stores") or raw.get("data") or raw.get("items") or []
+            stores = [
+                {
+                    "id": it.get("id") or it.get("_id"),
+                    "name": it.get("name"),
+                    "fullname": it.get("fullname") or it.get("name"),
+                    "city": it.get("city") or "",
+                    "avatar": it.get("avatar") or "",
+                    "active": bool(it.get("active", it.get("isActive", True))),
+                }
+                for it in items
+                if it is not None
+            ]
+            return {"stores": stores, "source_path_tried": path}
+        except Exception as e:
+            last_err = str(e)
+            continue
+
+    return {"stores": [], "error": last_err or "unknown_error"}
+
 
 @app.get("/report/download")
 async def report_download(name: str = Query(...)):

@@ -15,7 +15,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProductForm } from '@/components/stock/ProductForm';
 import { ItemQuickActions } from '@/components/stock/ItemQuickActions';
-import { useItems, useMe } from '@/hooks/useInventoryQueries';
+import { useItems } from '@/lib/hooks';
 import { useUserStore } from '@/lib/stores';
 import { formatCurrency } from '@/lib/format';
 import { useNavigate } from 'react-router-dom';
@@ -24,7 +24,7 @@ export default function ProductsPage() {
   const { currentStoreId } = useUserStore();
   const navigate = useNavigate();
   const [showCreateForm, setShowCreateForm] = useState(false);
-  
+
   // Filters
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -36,15 +36,15 @@ export default function ProductsPage() {
   const { data: itemsData, isLoading } = useItems({
     storeId: currentStoreId || '',
     q: search || undefined,
-    category: categoryFilter && categoryFilter !== 'all' ? categoryFilter : undefined,
+    category: categoryFilter !== 'all' ? categoryFilter : undefined,
     isActive: activeFilter === 'true' ? true : activeFilter === 'false' ? false : undefined,
     page,
     size: pageSize,
     sort: sortBy,
   });
 
-  const { data: meData } = useMe();
-  const canEdit = meData?.roles?.some(role => ['Admin', 'StoreManager'].includes(role)) ?? false;
+  // şimdilik sabit: gerçek rolde API bağlanınca değiştirilebilir
+  const canEdit = true;
 
   const totalPages = Math.ceil((itemsData?.total || 0) / pageSize);
 
@@ -52,7 +52,7 @@ export default function ProductsPage() {
     return (
       <div className="p-6">
         <div className="flex items-center gap-4 mb-6">
-          <Button 
+          <Button
             onClick={() => navigate('/dashboard')}
             variant="ghost"
             className="flex items-center gap-2"
@@ -63,11 +63,10 @@ export default function ProductsPage() {
         </div>
         <Card>
           <CardContent className="p-6 text-center">
-            <p className="text-muted-foreground">Ürün yönetimi için önce anasayfadan bir mağaza seçin.</p>
-            <Button 
-              onClick={() => navigate('/dashboard')}
-              className="mt-4"
-            >
+            <p className="text-muted-foreground">
+              Ürün yönetimi için önce anasayfadan bir mağaza seçin.
+            </p>
+            <Button onClick={() => navigate('/dashboard')} className="mt-4">
               Anasayfaya Git
             </Button>
           </CardContent>
@@ -79,7 +78,7 @@ export default function ProductsPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-4">
-        <Button 
+        <Button
           onClick={() => navigate('/dashboard')}
           variant="ghost"
           className="flex items-center gap-2"
@@ -88,13 +87,11 @@ export default function ProductsPage() {
           Anasayfaya Dön
         </Button>
       </div>
-      
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Ürün Yönetimi</h1>
-          <p className="text-muted-foreground">
-            Toplam {itemsData?.total || 0} ürün
-          </p>
+          <p className="text-muted-foreground">Toplam {itemsData?.total || 0} ürün</p>
         </div>
         {canEdit && (
           <Button onClick={() => setShowCreateForm(true)}>
@@ -104,6 +101,7 @@ export default function ProductsPage() {
         )}
       </div>
 
+      {/* Filtreler */}
       <Card>
         <CardHeader>
           <CardTitle>Filtreler</CardTitle>
@@ -119,7 +117,7 @@ export default function ProductsPage() {
                 className="pl-9"
               />
             </div>
-            
+
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Tüm Kategoriler" />
@@ -155,7 +153,7 @@ export default function ProductsPage() {
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="mt-4">
             <Button
               variant="outline"
@@ -173,6 +171,7 @@ export default function ProductsPage() {
         </CardContent>
       </Card>
 
+      {/* Ürün Tablosu */}
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
@@ -205,11 +204,13 @@ export default function ProductsPage() {
                     <TableCell>{item.category || '-'}</TableCell>
                     <TableCell>{formatCurrency(item.price)}</TableCell>
                     <TableCell>
-                      <span className={
-                        item.reorderLevel && item.stock <= item.reorderLevel 
-                          ? 'text-destructive font-medium' 
-                          : ''
-                      }>
+                      <span
+                        className={
+                          item.reorderLevel && item.stock <= item.reorderLevel
+                            ? 'text-destructive font-medium'
+                            : ''
+                        }
+                      >
                         {item.stock}
                       </span>
                     </TableCell>
@@ -255,10 +256,7 @@ export default function ProductsPage() {
         </div>
       )}
 
-      <ProductForm
-        open={showCreateForm}
-        onOpenChange={setShowCreateForm}
-      />
+      <ProductForm open={showCreateForm} onOpenChange={setShowCreateForm} />
     </div>
   );
 }

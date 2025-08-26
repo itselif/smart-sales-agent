@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreHorizontal, Edit, Trash2, TrendingUp, TrendingDown, ArrowLeftRight } from 'lucide-react';
+import { MoreHorizontal, Edit2, Trash2, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -19,10 +19,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ProductForm } from './ProductForm';
-import { MovementForm } from './MovementForm';
-import { StoreTransferForm } from './StoreTransferForm';
-import { useDeleteItem } from '@/hooks/useInventoryQueries';
-import type { InventoryItem } from '@/services/inventory';
+import { RequestModal } from './RequestModal';
+import { useDeleteItem } from '@/lib/hooks';
+import type { InventoryItem } from '@/lib/api';
 
 interface ItemQuickActionsProps {
   item: InventoryItem;
@@ -31,15 +30,13 @@ interface ItemQuickActionsProps {
 
 export function ItemQuickActions({ item, canEdit }: ItemQuickActionsProps) {
   const [showEditForm, setShowEditForm] = useState(false);
-  const [showMovementForm, setShowMovementForm] = useState(false);
-  const [showTransferForm, setShowTransferForm] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  
-  const deleteMutation = useDeleteItem();
+  const deleteItemMutation = useDeleteItem();
 
   const handleDelete = async () => {
     try {
-      await deleteMutation.mutateAsync(item.id);
+      await deleteItemMutation.mutateAsync(item.id);
       setShowDeleteDialog(false);
     } catch (error) {
       // Error handled by mutation
@@ -50,41 +47,26 @@ export function ItemQuickActions({ item, canEdit }: ItemQuickActionsProps) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="sm">
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {canEdit && (
-            <DropdownMenuItem onClick={() => setShowEditForm(true)}>
-              <Edit className="mr-2 h-4 w-4" />
-              Düzenle
-            </DropdownMenuItem>
-          )}
-          
-          {canEdit && (
-            <>
-              <DropdownMenuItem onClick={() => setShowMovementForm(true)}>
-                <TrendingUp className="mr-2 h-4 w-4" />
-                Stok Giriş (+)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowMovementForm(true)}>
-                <TrendingDown className="mr-2 h-4 w-4" />
-                Stok Çıkış (-)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowTransferForm(true)}>
-                <ArrowLeftRight className="mr-2 h-4 w-4" />
-                Mağazalar Arası Transfer
-              </DropdownMenuItem>
-            </>
-          )}
+          <DropdownMenuItem onClick={() => setShowRequestModal(true)}>
+            <Send className="mr-2 h-4 w-4" />
+            Talep Et
+          </DropdownMenuItem>
           
           {canEdit && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
+              <DropdownMenuItem onClick={() => setShowEditForm(true)}>
+                <Edit2 className="mr-2 h-4 w-4" />
+                Düzenle
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 onClick={() => setShowDeleteDialog(true)}
-                className="text-destructive"
+                className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Sil
@@ -100,16 +82,10 @@ export function ItemQuickActions({ item, canEdit }: ItemQuickActionsProps) {
         item={item}
       />
 
-      <MovementForm
-        open={showMovementForm}
-        onOpenChange={setShowMovementForm}
-        preSelectedItem={item}
-      />
-
-      <StoreTransferForm
-        open={showTransferForm}
-        onOpenChange={setShowTransferForm}
-        preSelectedItem={item}
+      <RequestModal
+        open={showRequestModal}
+        onOpenChange={setShowRequestModal}
+        item={item}
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -117,16 +93,15 @@ export function ItemQuickActions({ item, canEdit }: ItemQuickActionsProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Ürünü Sil</AlertDialogTitle>
             <AlertDialogDescription>
-              "{item.name}" ürününü silmek istediğinizden emin misiniz? 
-              Bu işlem geri alınamaz.
+              Bu işlem geri alınamaz. "{item.name}" ürünü kalıcı olarak silinecek.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>İptal</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteItemMutation.isPending}
+              className="bg-destructive hover:bg-destructive/90"
             >
               Sil
             </AlertDialogAction>

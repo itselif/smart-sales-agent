@@ -1,13 +1,8 @@
 // src/lib/stores.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Store as StoreType, getStores } from './api';
-
-export interface Store {
-  id: string;
-  name: string;
-  city: string;
-}
+import type { Store } from '@/lib/api';     // <-- TEK KAYNAK (api.ts)
+import { getStores } from '@/lib/api';      // <-- API'den mağaza çekiyoruz
 
 export interface User {
   id: string;
@@ -17,20 +12,20 @@ export interface User {
   token?: string;
   storeCode?: string;
   phone?: string;
-  assignedStores: string[]; // Kullanıcının erişebildiği mağaza ID'leri
+  assignedStores: string[];
 }
 
 interface AppState {
   user: User | null;
 
   // Mağazalar
-  stores: StoreType[];
+  stores: Store[];
   currentStoreId: string | null;
-  selectedStores: string[]; // Dashboard'da görüntülenecek mağazalar
+  selectedStores: string[];
 
   // Actions
   setUser: (user: User | null) => void;
-  setStores: (stores: StoreType[]) => void;
+  setStores: (stores: Store[]) => void;
   loadStores: () => Promise<void>;
   setCurrentStoreId: (storeId: string | null) => void;
   setSelectedStores: (storeIds: string[]) => void;
@@ -57,8 +52,9 @@ export const useAppStore = create<AppState>()(
 
         // İlk yüklemede boşsa seçimleri doldur
         if (get().selectedStores.length === 0) {
-          set({ selectedStores: stores.map(s => s.id) });
+          set({ selectedStores: stores.map((s) => s.id) });
         }
+        // Aktif mağaza yoksa ilkini ata
         if (!get().currentStoreId && stores[0]?.id) {
           set({ currentStoreId: stores[0].id });
         }

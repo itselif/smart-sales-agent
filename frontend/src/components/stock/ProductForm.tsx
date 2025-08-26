@@ -7,15 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { useCreateItem, useUpdateItem } from '@/hooks/useInventoryQueries';
+import { useCreateItem, useUpdateItem } from '@/lib/hooks';
 import { useUserStore } from '@/lib/stores';
-import type { InventoryItem } from '@/services/inventory';
+import type { InventoryItem } from '@/lib/api';
 
 const productSchema = z.object({
   name: z.string().min(2, 'Ürün adı en az 2 karakter olmalıdır'),
   sku: z.string().min(1, 'SKU zorunludur'),
   category: z.string().optional(),
   price: z.coerce.number().nonnegative('Fiyat negatif olamaz'),
+  stock: z.coerce.number().int().min(0, 'Stok negatif olamaz').default(0),
   reorderLevel: z.coerce.number().int().min(0).default(0),
   isActive: z.boolean().default(true),
 });
@@ -47,6 +48,7 @@ export function ProductForm({ open, onOpenChange, item }: ProductFormProps) {
       sku: item?.sku || '',
       category: item?.category || '',
       price: item?.price || 0,
+      stock: item?.stock || 0,
       reorderLevel: item?.reorderLevel || 0,
       isActive: item?.isActive ?? true,
     },
@@ -70,6 +72,7 @@ export function ProductForm({ open, onOpenChange, item }: ProductFormProps) {
           sku: data.sku,
           category: data.category,
           price: data.price,
+          stock: data.stock,
           reorderLevel: data.reorderLevel || 0,
           isActive: data.isActive,
         });
@@ -140,6 +143,19 @@ export function ProductForm({ open, onOpenChange, item }: ProductFormProps) {
             />
             {errors.price && (
               <p className="text-sm text-destructive">{errors.price.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="stock">Başlangıç Stok *</Label>
+            <Input
+              id="stock"
+              type="number"
+              {...register('stock')}
+              placeholder="0"
+            />
+            {errors.stock && (
+              <p className="text-sm text-destructive">{errors.stock.message}</p>
             )}
           </div>
 

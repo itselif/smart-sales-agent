@@ -1,24 +1,239 @@
 // src/lib/api.ts
-const BASE = import.meta.env.VITE_API_BASE_URL;
+const BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_BASE ||
+  "http://localhost:8000";
 
+const MB_STORES_URL = import.meta.env.VITE_STORES_URL as string | undefined;
+
+/* =========================
+ * Store types & API
+ * =======================*/
 export interface Store {
   id: string;
   name: string;
-  city: string;
-  fullname?: string;
+  fullname?: string; 
+  city?: string;
   avatar?: string;
   active?: boolean;
 }
 
-// ---- STORES ----
 export async function getStores(): Promise<Store[]> {
-  const r = await fetch(`${BASE}/stores/list`);
-  if (!r.ok) throw new Error("Stores fetch failed");
-  const data = await r.json();
-  return data.stores ?? [];
+  // 1) (Opsiyonel) Mindbricks URL'i doğrudan dene (CORS açıksa)
+  if (MB_STORES_URL) {
+    try {
+      const r = await fetch(MB_STORES_URL, { headers: { Accept: "application/json" } });
+      if (r.ok) {
+        const data = await r.json();
+        const list = Array.isArray(data) ? data : (data.stores ?? data.items ?? []);
+        return (list as any[])
+          .map((x) => ({
+            id: x.id ?? x._id,
+            name: x.name,
+            fullname: x.fullname ?? x.name,
+            city: x.city ?? "",
+            avatar: x.avatar ?? "",
+            active: (x.active ?? x.isActive ?? true) as boolean,
+          }))
+          .filter((s) => s.id && s.name);
+      }
+    } catch {
+      // CORS/Network hatası—backend proxy'ye düş
+    }
+  }
+
+  // 2) Backend proxy (önerilen ve stabil yol)
+  try {
+    const r = await fetch(`${BASE}/stores/list`, { headers: { Accept: "application/json" } });
+    if (!r.ok) return [];
+    const data = await r.json();
+    return Array.isArray(data) ? data : (data.stores ?? []);
+  } catch {
+    return [];
+  }
 }
 
-// ---- SALES ----
+/* =========================
+ * Inventory types & API
+ * =======================*/
+export interface InventoryItem {
+  id: string;
+  storeId: string;
+  sku: string;
+  name: string;
+  price: number;
+  stock: number;
+  reorderLevel?: number | null;
+  category?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InventoryAvailability {
+  storeId: string;
+  storeName: string;
+  stock: number;
+}
+
+export interface StockRequest {
+  id: string;
+  itemId: string;
+  sku: string;
+  name: string;
+  requesterStoreId: string;
+  targetStoreId?: string | null;
+  quantity: number;
+  status: "pending" | "approved" | "rejected" | "fulfilled";
+  createdAt: string;
+  updatedAt: string;
+  note?: string;
+  decisionNote?: string;
+}
+
+export interface LowStockAlert {
+  itemId: string;
+  sku: string;
+  name: string;
+  stock: number;
+  reorderLevel: number;
+  daysToDeplete?: number;
+  isAcknowledged: boolean;
+}
+
+export async function listItems(params: {
+  storeId: string;
+  q?: string;
+  page?: number;
+  size?: number;
+  category?: string;
+  isActive?: boolean;
+  sort?: string;
+}): Promise<{ items: InventoryItem[]; total: number }> {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") search.append(k, String(v));
+  });
+
+  const r = await fetch(`${BASE}/inventory/items?${search.toString()}`);
+  if (!r.ok) throw new Error("Failed to fetch items");
+  return r.json();
+}
+
+export async function createItem(
+  payload: Omit<InventoryItem, "id" | "createdAt" | "updatedAt">
+): Promise<InventoryItem> {
+  const r = await fetch(`${BASE}/inventory/items`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!r.ok) throw new Error("Failed to create item");
+  return r.json();
+}
+
+export async function updateItem(id: string, patch: Partial<InventoryItem>): Promise<InventoryItem> {
+  const r = await fetch(`${BASE}/inventory/items/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  if (!r.ok) throw new Error("Failed to update item");
+  return r.json();
+}
+
+export async function deleteItem(id: string): Promise<{ ok: boolean }> {
+  const r = await fetch(`${BASE}/inventory/items/${id}`, { method: "DELETE" });
+  if (!r.ok) throw new Error("Failed to delete item");
+  return { ok: true };
+}
+
+/* Availability */
+export async function getAvailability(sku: string): Promise<InventoryAvailability[]> {
+  const r = await fetch(`${BASE}/inventory/availability?sku=${encodeURIComponent(sku)}`);
+  if (!r.ok) throw new Error("Failed to fetch availability");
+  return r.json();
+}
+
+/* Requests */
+export async function createRequest(body: {
+  requesterStoreId: string;
+  targetStoreId?: string;
+  itemId: string;
+  quantity: number;
+  note?: string;
+}): Promise<StockRequest> {
+  const r = await fetch(`${BASE}/inventory/requests`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error("Failed to create request");
+  return r.json();
+}
+
+export async function listRequests(params: {
+  storeId: string;
+  role: "requester" | "target" | "all";
+}): Promise<StockRequest[]> {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null) search.append(k, String(v));
+  });
+
+  const r = await fetch(`${BASE}/inventory/requests?${search.toString()}`);
+  if (!r.ok) throw new Error("Failed to fetch requests");
+  return r.json();
+}
+
+export async function updateRequest(
+  id: string,
+  patch: { status: "approved" | "rejected" | "fulfilled"; decisionNote?: string }
+): Promise<StockRequest> {
+  const r = await fetch(`${BASE}/inventory/requests/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  if (!r.ok) throw new Error("Failed to update request");
+  return r.json();
+}
+
+/* Transfer */
+export async function transferStock(body: {
+  itemId: string;
+  quantity: number;
+  fromStoreId: string;
+  toStoreId: string;
+  note?: string;
+}): Promise<{ ok: boolean }> {
+  const r = await fetch(`${BASE}/inventory/transfer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error("Failed to transfer stock");
+  return { ok: true };
+}
+
+/* Alerts */
+export async function listAlerts(params: {
+  storeId: string;
+  onlyOpen?: boolean;
+}): Promise<{ items: LowStockAlert[] }> {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null) search.append(k, String(v));
+  });
+
+  const r = await fetch(`${BASE}/inventory/alerts?${search.toString()}`);
+  if (!r.ok) throw new Error("Failed to fetch alerts");
+  return r.json();
+}
+
+/* =========================
+ * Sales / Stock / Report
+ * =======================*/
 export interface SalesForecast {
   next_7days: number;
   confidence: number;
@@ -47,13 +262,6 @@ export interface SalesResponse {
   ai_insights?: string;
 }
 
-export async function getSales(storeId: string): Promise<SalesResponse> {
-  const r = await fetch(`${BASE}/sales/analyze?store_id=${encodeURIComponent(storeId)}`);
-  if (!r.ok) throw new Error("Sales analysis failed");
-  return r.json();
-}
-
-// ---- STOCK ----
 export interface StockProduct {
   product_id: string;
   name?: string;
@@ -77,13 +285,6 @@ export interface StockResponse {
   total_value: number;
 }
 
-export async function getStock(storeId: string): Promise<StockResponse> {
-  const r = await fetch(`${BASE}/stock/analysis?store_id=${encodeURIComponent(storeId)}`);
-  if (!r.ok) throw new Error("Stock analysis failed");
-  return r.json();
-}
-
-// ---- REPORT / ORCHESTRATE ----
 export interface ReportBuildResponse {
   format: "html" | "pdf";
   path: string;
@@ -94,13 +295,8 @@ export interface ReportBuildResponse {
   download_url: string;
 }
 
-export async function buildReport(storeId: string, request = "standart rapor"): Promise<ReportBuildResponse> {
-  const r = await fetch(`${BASE}/report/build?store_id=${encodeURIComponent(storeId)}&request=${encodeURIComponent(request)}`);
-  if (!r.ok) throw new Error("Report build failed");
-  return r.json();
-}
-
 export type OrchestrateIntent = "sales" | "stock" | "report";
+
 export interface OrchestrateResponse {
   intent: OrchestrateIntent;
   data?: SalesResponse | StockResponse;
@@ -109,8 +305,35 @@ export interface OrchestrateResponse {
   download_url?: string;
 }
 
+export async function getSales(storeId: string): Promise<SalesResponse> {
+  const r = await fetch(`${BASE}/sales/analyze?store_id=${encodeURIComponent(storeId)}`);
+  if (!r.ok) throw new Error("Sales analysis failed");
+  return r.json();
+}
+
+export async function getStock(storeId: string): Promise<StockResponse> {
+  const r = await fetch(`${BASE}/stock/analysis?store_id=${encodeURIComponent(storeId)}`);
+  if (!r.ok) throw new Error("Stock analysis failed");
+  return r.json();
+}
+
+export async function buildReport(
+  storeId: string,
+  request = "standart rapor"
+): Promise<ReportBuildResponse> {
+  const r = await fetch(
+    `${BASE}/report/build?store_id=${encodeURIComponent(storeId)}&request=${encodeURIComponent(
+      request
+    )}`
+  );
+  if (!r.ok) throw new Error("Report build failed");
+  return r.json();
+}
+
 export async function orchestrate(q: string, storeId: string): Promise<OrchestrateResponse> {
-  const r = await fetch(`${BASE}/orchestrate-llm?q=${encodeURIComponent(q)}&store_id=${encodeURIComponent(storeId)}`);
+  const r = await fetch(
+    `${BASE}/orchestrate-llm?q=${encodeURIComponent(q)}&store_id=${encodeURIComponent(storeId)}`
+  );
   if (!r.ok) throw new Error("Orchestrate failed");
   return r.json();
 }

@@ -48,11 +48,16 @@ export default function Dashboard() {
     setUser,
     selectedStores,
     setSelectedStores,
+    loadStores,  
   } = useAppStore();
 
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  useEffect(() => {
+  if (!user) { navigate('/auth/login'); return; }
+  if (stores.length === 0) { loadStores().catch(() => {}); }
+}, [user, stores.length, loadStores, navigate]);
   // API hooks
   const { data: salesData, isLoading: salesLoading, error: salesError } = useSales(currentStoreId || "");
   const { data: stockData, isLoading: stockLoading, error: stockError } = useStock(currentStoreId || "");
