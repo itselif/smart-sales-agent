@@ -1,1 +1,0 @@
-Refer to /api/openapi for public OpenAPI schema access. Internal config and logs via /admin.

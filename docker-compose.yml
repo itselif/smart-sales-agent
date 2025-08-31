@@ -1,0 +1,229 @@
+services:
+  db:
+    image: postgres:16
+    container_name: db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: salesai
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d salesai"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  # ---------- Services (Node) ----------
+  auth:
+    build:
+      context: ./modules/salesai1-auth-service
+      dockerfile: Dockerfile.dev
+    container_name: auth
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/salesai
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports:
+      - "3001:3000"
+
+  reporting:
+    build:
+      context: ./modules/salesai1-reporting-service
+      dockerfile: Dockerfile.dev
+    container_name: reporting
+    environment:
+      PORT: 3003
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/salesai
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports:
+      - "3002:3003"
+
+  observability:
+    build:
+      context: ./modules/salesai1-observability-service
+      dockerfile: Dockerfile.dev
+    container_name: observability
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/salesai
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      db: { condition: service_healthy }
+    ports:
+      - "3003:3000"
+
+  panel:
+    build:
+      context: ./modules/salesai1-panel
+      dockerfile: Dockerfile.dev
+    container_name: panel
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+    ports:
+      - "3004:80"  # Nginx container içi 80 → host 3004
+
+  notification:
+    build:
+      context: ./modules/salesai1-notification-service
+      dockerfile: Dockerfile.dev
+    container_name: notification
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/salesai
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports:
+      - "3005:3000"
+
+  storemgmt:
+    build:
+      context: ./modules/salesai1-storemanagement-service
+      dockerfile: Dockerfile.dev
+    container_name: storemgmt
+    environment:
+      PORT: 3002
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/salesai
+    depends_on:
+      db: { condition: service_healthy }
+    ports:
+      - "3006:3002"
+
+  platformadmin:
+    build:
+      context: ./modules/salesai1-platformadmin-service
+      dockerfile: Dockerfile.dev
+    container_name: platformadmin
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/salesai
+    depends_on:
+      db: { condition: service_healthy }
+    ports:
+      - "3007:3000"
+
+  inventory:
+    build:
+      context: ./modules/salesai1-inventorymanagement-service
+      dockerfile: Dockerfile.dev
+    container_name: inventory
+    environment:
+      PORT: 3002
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/salesai
+    depends_on:
+      db: { condition: service_healthy }
+    ports:
+      - "3008:3002"
+
+  document:
+    build:
+      context: ./modules/salesai1-document-service
+      dockerfile: Dockerfile
+    container_name: document
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/salesai
+    depends_on:
+      db: { condition: service_healthy }
+    ports:
+      - "3009:3000"
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: kafka
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+    ports:
+      - "9092:9092"
+
+  sales:
+    build:
+      context: ./modules/salesai1-salesmanagement-service
+      dockerfile: Dockerfile.dev
+    container_name: sales 
+    environment:
+      PORT: 3001
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/salesai
+    depends_on:
+      db: { condition: service_healthy }
+    ports:
+      - "3010:3001"
+
+  bff:
+    build:
+      context: ./modules/salesai1-bff-service
+      dockerfile: Dockerfile.dev
+    container_name: bff
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+
+      # Kafka bağlantısı
+      KAFKA_URI: kafka:9092
+
+      # BFF'in konuşacağı servisler (compose içi DNS isimleri)
+      AUTH_API: http://auth:3000
+      SALES_API: http://sales:3000
+      REPORT_API: http://reporting:3000
+      STORE_API: http://storemgmt:3000
+      INVENTORY_API: http://inventory:3000
+      DOCUMENT_API: http://document:3000
+      NOTIFICATION_API: http://notification:3000
+      OBS_API: http://observability:3000
+      PLATFORMADMIN_API: http://platformadmin:3000
+      PANEL_API: http://panel:3000
+
+    depends_on:
+      auth:
+        condition: service_started
+      sales:
+        condition: service_started
+      kafka:
+        condition: service_started
+
+    ports:
+      - "3011:3000"
+
+
+volumes:
+  pgdata:

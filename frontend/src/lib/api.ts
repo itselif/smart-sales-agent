@@ -232,6 +232,32 @@ export async function listAlerts(params: {
 }
 
 /* =========================
+ * User Prefs
+ * =======================*/
+export interface UserPrefs {
+  id?: string | null;
+  userId: string;
+  storeId: string | null;
+  selectedStoreIds: string[];
+}
+
+export async function getUserPrefs(userId: string): Promise<UserPrefs> {
+  const r = await fetch(`${BASE}/user/prefs?user_id=${encodeURIComponent(userId)}`);
+  if (!r.ok) throw new Error("Failed to load preferences");
+  return r.json();
+}
+
+export async function saveUserPrefs(prefs: UserPrefs): Promise<{ ok: boolean; id?: string }> {
+  const r = await fetch(`${BASE}/user/prefs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(prefs),
+  });
+  if (!r.ok) throw new Error("Failed to save preferences");
+  return r.json();
+}
+
+/* =========================
  * Sales / Stock / Report
  * =======================*/
 export interface SalesForecast {

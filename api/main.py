@@ -1,9 +1,11 @@
+# api/main.py
 from __future__ import annotations
 
 import os
+import json
 from pathlib import Path
-from typing import Optional
-from fastapi import FastAPI, Query, HTTPException, Body
+from typing import Optional, Dict, Any
+from fastapi import FastAPI, Query, HTTPException, Body, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -25,9 +27,7 @@ from core.repositories.mindbricks import MindbricksStockRepository
 from core.repositories.mindbricks_sales import MindbricksSalesRepository
 from api.auth_proxy import router as auth_router
 
-
 # ========== .env ==========
-# Proje kökünden .env'yi YÜKLE ve var olan env'yi override et
 ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(dotenv_path=ENV_PATH, override=True)
 
@@ -37,8 +37,8 @@ def env_flag(name: str, default: str = "0") -> bool:
 def any_true(*flags: bool) -> bool:
     return any(bool(f) for f in flags)
 
-# Bayraklar (ana: USE_MINDBRICKS_DATA; eskilerle geriye uyumlu)
-USE_MB_DATA      = env_flag("USE_MINDBRICKS_DATA")  # önerilen
+# Bayraklar
+USE_MB_DATA      = env_flag("USE_MINDBRICKS_DATA")
 USE_MB_SALES     = env_flag("USE_MINDBRICKS_SALES")
 USE_MB_STOCK     = env_flag("USE_MINDBRICKS_STOCK")
 USE_MB_REPORTING = env_flag("USE_MINDBRICKS_REPORTING")
@@ -46,8 +46,13 @@ USE_MEMORY       = env_flag("USE_MEMORY", "1")
 
 MB_SUFFIX = (os.getenv("MINDBRICKS_SUFFIX", "") or "").strip()
 MB_TOKEN  = (os.getenv("MINDBRICKS_SERVICE_TOKEN") or os.getenv("MINDBRICKS_API_KEY") or "").strip()
-
 MB_ACTIVE = any_true(USE_MB_DATA, USE_MB_SALES, USE_MB_STOCK, USE_MB_REPORTING)
+
+# UserPreference servis & path’leri (Mindbricks)
+PREF_SERVICE      = (os.getenv("MINDBRICKS_PREF_SERVICE") or "storemanagement").strip()
+PREF_LIST_PATH    = (os.getenv("MINDBRICKS_PREF_LIST_PATH") or "/pref/listPref").strip()
+PREF_CREATE_PATH  = (os.getenv("MINDBRICKS_PREF_CREATE_PATH") or "/pref/createPref").strip()
+PREF_UPDATE_PATH  = (os.getenv("MINDBRICKS_PREF_UPDATE_PATH") or "/pref/updatePref").strip()
 
 # ========== FastAPI ==========
 app = FastAPI(title="StorePilot API")
@@ -64,9 +69,25 @@ app.add_middleware(
 app.include_router(auth_router)
 
 # Rapor klasörü ve statik mount
-REPORT_DIR = (Path(__file__).resolve().parents[1] / "storage" / "reports").absolute()
+BASE_DIR = Path(__file__).resolve().parents[1]
+REPORT_DIR = (BASE_DIR / "storage" / "reports").absolute()
 REPORT_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/reports", StaticFiles(directory=str(REPORT_DIR)), name="reports")
+
+# JSON fallback (MB yoksa)
+PREFS_PATH = (BASE_DIR / "storage" / "user_prefs.json").absolute()
+PREFS_PATH.parent.mkdir(parents=True, exist_ok=True)
+if not PREFS_PATH.exists():
+    PREFS_PATH.write_text("{}", encoding="utf-8")
+
+def _load_prefs_fs() -> Dict[str, Any]:
+    try:
+        return json.loads(PREFS_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+def _save_prefs_fs(data: Dict[str, Any]) -> None:
+    PREFS_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 # App state
 app.state.mb_client: Optional[MindbricksClient] = None
@@ -78,37 +99,35 @@ app.state.report_dir = str(REPORT_DIR)
 # ========== Startup ==========
 @app.on_event("startup")
 async def _startup() -> None:
-    # Mindbricks client'ı yalnızca gerekli koşullar sağlanırsa kur
+    # Mindbricks client
     if MB_ACTIVE and MB_SUFFIX and MB_TOKEN:
         print(f"[MB][startup] enabling Mindbricks client  suffix={MB_SUFFIX}  token_set={bool(MB_TOKEN)}")
-        app.state.mb_client = MindbricksClient()  # kendi .env'inden suffix/token okur
+        app.state.mb_client = MindbricksClient()
     else:
-        print(f"[MB][startup] disabled "
-              f"(MB_ACTIVE={MB_ACTIVE}, suffix={'OK' if MB_SUFFIX else 'MISSING'}, token={'OK' if MB_TOKEN else 'MISSING'})")
+        print(f"[MB][startup] disabled (MB_ACTIVE={MB_ACTIVE}, suffix={'OK' if MB_SUFFIX else 'MISSING'}, token={'OK' if MB_TOKEN else 'MISSING'})")
         app.state.mb_client = None
 
-    # Sales agent için repository bağlantısı
-    sales_repo = None
-    if app.state.mb_client:
-        sales_repo = MindbricksSalesRepository(app.state.mb_client)
-    
+    # Sales / Stock / Report servisleri
+    sales_repo = MindbricksSalesRepository(app.state.mb_client) if app.state.mb_client else None
     sales_agent = SalesAgent(sales_repo=sales_repo)
 
-    # Stock agent için repository bağlantısı
-    stock_repo = None
-    if app.state.mb_client:
-        stock_repo = MindbricksStockRepository(app.state.mb_client)
-    
+    stock_repo = MindbricksStockRepository(app.state.mb_client) if app.state.mb_client else None
     stock_agent = StockAgent(sales_agent=sales_agent, stock_repo=stock_repo)
+
     report_agent = ReportAgent(output_dir=str(REPORT_DIR))
 
-    # Servisleri bağla (mb varsa mb üzerinden, yoksa lokal ajan)
-    app.state.sales_svc  = SalesService(sales_agent, mb=app.state.mb_client)
-    app.state.stock_svc  = StockService(stock_agent, mb=app.state.mb_client)
+    app.state.sales_svc  = SalesService(sales_agent,  mb=app.state.mb_client)
+    app.state.stock_svc  = StockService(stock_agent,  mb=app.state.mb_client)
     app.state.report_svc = ReportService(
         report_agent, mb=app.state.mb_client,
         public_mount_prefix="/reports", report_dir=str(REPORT_DIR)
     )
+
+# ========== Helpers ==========
+def _need_mb(mb: Optional[MindbricksClient]) -> MindbricksClient:
+    if not mb:
+        raise HTTPException(503, detail="Mindbricks client not available")
+    return mb
 
 # ========== Endpoints ==========
 @app.get("/")
@@ -117,7 +136,6 @@ async def root():
 
 @app.get("/healthz")
 async def healthz():
-    # healthz üzerinde env'yi net göster
     return {
         "ok": True,
         "report_dir": str(REPORT_DIR),
@@ -146,7 +164,6 @@ async def stock_analysis(store_id: str = Query(..., description="Mağaza ID veya
 @app.get("/report/build")
 async def report_build(store_id: str = Query(...), request: str = "standart rapor"):
     res = await app.state.report_svc.build(store_id, request)
-    # public_url yoksa dosyayı /reports altına publish et
     if "public_url" not in res or not res.get("public_url"):
         path = res.get("path")
         if path:
@@ -155,6 +172,14 @@ async def report_build(store_id: str = Query(...), request: str = "standart rapo
             res["download_url"] = f"/report/download?name={fname}"
     return res
 
+@app.get("/report/download")
+async def report_download(name: str = Query(...)):
+    safe_path = (REPORT_DIR / name).absolute()
+    if not str(safe_path).startswith(str(REPORT_DIR)) or not safe_path.exists():
+        raise HTTPException(status_code=404, detail="Dosya bulunamadı")
+    return FileResponse(str(safe_path), filename=name)
+
+# ---- STORES LIST (proxy) ----
 @app.get("/stores/list")
 async def stores_list():
     if not app.state.mb_client:
@@ -163,23 +188,17 @@ async def stores_list():
     service = os.getenv("MINDBRICKS_STORE_SERVICE", "storemanagement").strip() or "storemanagement"
     env_path = (os.getenv("MINDBRICKS_STORES_LIST_PATH") or "/stores").strip()
 
-    # Güvenli fallback sırası
     candidate_paths = []
-    # 1) env ne diyorsa onu ekle
     candidate_paths.append(env_path if env_path.startswith("/") else f"/{env_path}")
-    # 2) doğru olanı mutlaka dene
     if "/stores" not in candidate_paths:
         candidate_paths.append("/stores")
-    # 3) bazı eski şemalar için tekil de dene
     if "/store" not in candidate_paths:
         candidate_paths.append("/store")
 
     last_err = None
     for path in candidate_paths:
         try:
-            raw = await app.state.mb_client.get_json(
-                service, path, params={"limit": 100}
-            )
+            raw = await app.state.mb_client.get_json(service, path, params={"limit": 100})
             items = raw.get("stores") or raw.get("data") or raw.get("items") or []
             stores = [
                 {
@@ -190,8 +209,7 @@ async def stores_list():
                     "avatar": it.get("avatar") or "",
                     "active": bool(it.get("active", it.get("isActive", True))),
                 }
-                for it in items
-                if it is not None
+                for it in items if it is not None
             ]
             return {"stores": stores, "source_path_tried": path}
         except Exception as e:
@@ -200,30 +218,95 @@ async def stores_list():
 
     return {"stores": [], "error": last_err or "unknown_error"}
 
+# ---- USER PREFS (Mindbricks + FS fallback) ----
+@app.get("/user/prefs")
+async def get_user_prefs(user_id: str = Query(..., description="Auth user id")):
+    # MB varsa oradan çek
+    if app.state.mb_client:
+        try:
+            raw = await app.state.mb_client.get_json(
+                PREF_SERVICE, PREF_LIST_PATH, params={"userId": user_id, "limit": 1}
+            )
+            items = raw.get("userpreferences") or raw.get("items") or raw.get("data") or []
+            if items:
+                it = items[0]
+                return {
+                    "id": it.get("id") or it.get("_id"),
+                    "userId": it.get("userId"),
+                    "storeId": it.get("storeId") or None,
+                    "selectedStoreIds": it.get("selectedStoreIds") or [],
+                }
+        except Exception as e:
+            # düş ve FS fallback
+            print("[prefs][MB] list failed:", e)
 
-@app.get("/report/download")
-async def report_download(name: str = Query(...)):
-    safe_path = (REPORT_DIR / name).absolute()
-    if not str(safe_path).startswith(str(REPORT_DIR)) or not safe_path.exists():
-        raise HTTPException(status_code=404, detail="Dosya bulunamadı")
-    return FileResponse(str(safe_path), filename=name)
+    # FS fallback
+    data = _load_prefs_fs()
+    prefs = data.get(user_id) or {}
+    return {
+        "id": None,
+        "userId": user_id,
+        "storeId": prefs.get("current_store_id") or None,
+        "selectedStoreIds": prefs.get("selected_store_ids") or [],
+    }
 
-# Debug endpoint for stock data
+@app.post("/user/prefs")
+async def upsert_user_prefs(payload: Dict[str, Any] = Body(...)):
+    user_id = payload.get("userId") or payload.get("user_id")
+    if not user_id:
+        raise HTTPException(400, detail="userId required")
+
+    store_id = payload.get("storeId") or payload.get("current_store_id")
+    selected_ids = payload.get("selectedStoreIds") or payload.get("selected_store_ids") or []
+
+    # MB varsa upsert
+    if app.state.mb_client:
+        try:
+            # önce var mı bak
+            raw = await app.state.mb_client.get_json(
+                PREF_SERVICE, PREF_LIST_PATH, params={"userId": user_id, "limit": 1}
+            )
+            items = raw.get("userpreferences") or raw.get("items") or []
+            if items:
+                pref_id = items[0].get("id") or items[0].get("_id")
+                # bazı şemalarda path /pref/updatePref/{id}, bazısında body'de id beklenir
+                patch_body = {"storeId": store_id, "selectedStoreIds": selected_ids}
+                try:
+                    res = await app.state.mb_client.patch_json(
+                        PREF_SERVICE, f"{PREF_UPDATE_PATH}/{pref_id}", data=patch_body
+                    )
+                except Exception:
+                    res = await app.state.mb_client.patch_json(
+                        PREF_SERVICE, PREF_UPDATE_PATH, data={**patch_body, "id": pref_id}
+                    )
+                return {"ok": True, "id": pref_id, "data": res}
+            else:
+                # create
+                create_body = {"userId": user_id, "storeId": store_id, "selectedStoreIds": selected_ids}
+                res = await app.state.mb_client.post_json(PREF_SERVICE, PREF_CREATE_PATH, data=create_body)
+                new_id = res.get("id") or res.get("_id")
+                return {"ok": True, "id": new_id, "data": res}
+        except Exception as e:
+            print("[prefs][MB] upsert failed -> FS fallback:", e)
+
+    # FS fallback
+    data = _load_prefs_fs()
+    data[user_id] = {"current_store_id": store_id, "selected_store_ids": selected_ids}
+    _save_prefs_fs(data)
+    return {"ok": True, "id": None, "data": {"source": "fs"}}
+
+# ---- Debug / Env ----
 @app.get("/debug/stock")
 async def debug_stock(store_id: str = Query(..., description="Mağaza ID veya GUID")):
-    """Debug endpoint for stock data - tests Mindbricks connection directly"""
     if not app.state.mb_client:
         return {"success": False, "error": "Mindbricks client not available"}
-    
     try:
-        # Doğrudan Mindbricks'e istek at
         data = await app.state.mb_client.get_json(
-            "inventorymanagement", 
-            "/inventoryitems",
+            "inventorymanagement", "/inventoryitems",
             params={"storeId": store_id, "limit": 200}
         )
         return {
-            "success": True, 
+            "success": True,
             "data_count": len(data.get('inventoryItems', [])),
             "sample_data": data.get('inventoryItems', [])[:3] if data.get('inventoryItems') else [],
             "full_response_keys": list(data.keys()) if isinstance(data, dict) else []
@@ -231,10 +314,8 @@ async def debug_stock(store_id: str = Query(..., description="Mağaza ID veya GU
     except Exception as e:
         return {"success": False, "error": str(e), "store_id": store_id}
 
-# Debug endpoint for environment variables
 @app.get("/debug/env")
 async def debug_env():
-    """Debug endpoint to check environment variables"""
     env_vars = {
         "USE_MINDBRICKS_STOCK": os.getenv("USE_MINDBRICKS_STOCK"),
         "MINDBRICKS_STOCK_SERVICE": os.getenv("MINDBRICKS_STOCK_SERVICE"),
@@ -247,7 +328,7 @@ async def debug_env():
     }
     return {"env_vars": env_vars}
 
-# Orchestrator (opsiyonel LLM akışı)
+# Orchestrator
 from core.orchestrator import run_orchestrator
 
 @app.get("/orchestrate-llm")
@@ -271,17 +352,14 @@ async def orchestrate_llm_post(payload: dict = Body(...)):
         import logging; logging.exception("orchestrate failed")
         raise HTTPException(status_code=500, detail=f"orchestrate_failed: {e}")
 
-# Test endpoint for direct inventory access
+# Test endpoint
 @app.get("/test/inventory")
 async def test_inventory(store_id: str = Query(...)):
-    """Test endpoint that uses MindbricksStockRepository directly"""
     if not app.state.mb_client:
         return {"error": "Mindbricks client not available"}
-    
     try:
         repo = MindbricksStockRepository(app.state.mb_client)
         stock_data = await repo.get_stock_snapshot(store_id)
-        
         return {
             "success": True,
             "store_id": store_id,
@@ -292,7 +370,7 @@ async def test_inventory(store_id: str = Query(...)):
                     "current_stock": item.current_stock,
                     "min_required": item.min_required,
                     "price": item.price
-                } for item in stock_data[:10]  # İlk 10 ürün
+                } for item in stock_data[:10]
             ]
         }
     except Exception as e:
@@ -300,4 +378,4 @@ async def test_inventory(store_id: str = Query(...)):
 
 if __name__ == '__main__':
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8000")))

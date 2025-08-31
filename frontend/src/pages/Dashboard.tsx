@@ -48,19 +48,44 @@ export default function Dashboard() {
     setUser,
     selectedStores,
     setSelectedStores,
-    loadStores,  
+    loadStores,
+    loadUserPrefs,       // <-- kullanıcı tercihlerini BE’den yükler
   } = useAppStore();
 
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Giriş kontrolü + mağazaları ve kullanıcı tercihlerini yükle
   useEffect(() => {
-  if (!user) { navigate('/auth/login'); return; }
-  if (stores.length === 0) { loadStores().catch(() => {}); }
-}, [user, stores.length, loadStores, navigate]);
-  // API hooks
-  const { data: salesData, isLoading: salesLoading, error: salesError } = useSales(currentStoreId || "");
-  const { data: stockData, isLoading: stockLoading, error: stockError } = useStock(currentStoreId || "");
+    if (!user) {
+      navigate("/auth/login");
+      return;
+    }
+    // mağazaları çek
+    if (stores.length === 0) {
+      loadStores().catch(() => {});
+    }
+    // kullanıcıya ait current/selected store’ları getir
+    loadUserPrefs().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Mağazalar geldikten sonra hâlâ seçim yoksa makul varsayılanları doldur
+  useEffect(() => {
+    if (!user) return;
+    if (!currentStoreId && stores[0]?.id) {
+      setCurrentStoreId(stores[0].id);
+    }
+    if (selectedStores.length === 0 && stores[0]?.id) {
+      setSelectedStores([stores[0].id]);
+    }
+  }, [user, stores, currentStoreId, selectedStores.length, setCurrentStoreId, setSelectedStores]);
+
+  // API hooks (aktif mağazaya göre)
+  const { data: salesData, isLoading: salesLoading, error: salesError } =
+    useSales(currentStoreId || "");
+  const { data: stockData, isLoading: stockLoading, error: stockError } =
+    useStock(currentStoreId || "");
   const { mutate: buildReport, isPending: reportPending } = useBuildReport();
 
   // Inventory hooks
@@ -74,26 +99,8 @@ export default function Dashboard() {
     onlyOpen: true,
   });
 
-  // İlk yönlendirme ve varsayılan seçimler
-  useEffect(() => {
-    if (!user) {
-      navigate("/auth/login");
-      return;
-    }
-
-    // Kullanıcı mağaza erişimleri -> başlangıç seçimi
-    if (user.assignedStores?.length && selectedStores.length === 0) {
-      setSelectedStores(user.assignedStores);
-    }
-
-    // currentStoreId yoksa ilk mağazayı ata
-    if (!currentStoreId && (user.assignedStores?.[0] || stores?.[0]?.id)) {
-      setCurrentStoreId(user.assignedStores?.[0] ?? stores[0].id);
-    }
-  }, [user, navigate, selectedStores.length, setSelectedStores, currentStoreId, setCurrentStoreId, stores]);
-
   const handleStoreChange = (newStoreId: string) => {
-    setCurrentStoreId(newStoreId);
+    setCurrentStoreId(newStoreId); // persist otomatik (stores.ts’de)
   };
 
   const handleBuildReport = () => {
@@ -159,7 +166,7 @@ export default function Dashboard() {
     if (!itemsData?.items) return { totalItems: 0, totalValue: 0, lowStockCount: 0 };
 
     const totalItems = itemsData.total;
-    const totalValue = itemsData.items.reduce((sum, item) => sum + (item.price * item.stock), 0);
+    const totalValue = itemsData.items.reduce((sum, item) => sum + item.price * item.stock, 0);
     const lowStockCount = itemsData.items.filter(
       (item) => item.reorderLevel && item.stock <= item.reorderLevel
     ).length;
@@ -224,7 +231,11 @@ export default function Dashboard() {
                 </DialogContent>
               </Dialog>
 
-              <Button onClick={handleBuildReport} disabled={reportPending || !currentStoreId} variant="outline">
+              <Button
+                onClick={handleBuildReport}
+                disabled={reportPending || !currentStoreId}
+                variant="outline"
+              >
                 <FileText className="h-4 w-4 mr-2" />
                 {reportPending ? "Oluşturuluyor..." : "Rapor Oluştur"}
               </Button>
@@ -369,11 +380,17 @@ export default function Dashboard() {
 
             {/* Critical Stock Table */}
             {stockData?.critical_products && stockData.critical_products.length > 0 && (
-              <StockTable products={stockData.critical_products} title="Kritik Stok Durumu" variant="critical" />
+              <StockTable
+                products={stockData.critical_products}
+                title="Kritik Stok Durumu"
+                variant="critical"
+              />
             )}
 
             {/* All Stock Table */}
-            {stockData?.products && <StockTable products={stockData.products} title="Tüm Stok Durumu" variant="all" />}
+            {stockData?.products && (
+              <StockTable products={stockData.products} title="Tüm Stok Durumu" variant="all" />
+            )}
           </TabsContent>
 
           {/* Inventory Management Tab */}
@@ -385,7 +402,11 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Button onClick={() => navigate("/stock/products")} className="flex items-center gap-2 h-20" variant="outline">
+                  <Button
+                    onClick={() => navigate("/stock/products")}
+                    className="flex items-center gap-2 h-20"
+                    variant="outline"
+                  >
                     <Plus className="h-6 w-6" />
                     <div className="text-left">
                       <div className="font-medium">Ürün Yönetimi</div>
@@ -393,7 +414,11 @@ export default function Dashboard() {
                     </div>
                   </Button>
 
-                  <Button onClick={() => navigate("/stock/movements")} className="flex items-center gap-2 h-20" variant="outline">
+                  <Button
+                    onClick={() => navigate("/stock/movements")}
+                    className="flex items-center gap-2 h-20"
+                    variant="outline"
+                  >
                     <ArrowUpDown className="h-6 w-6" />
                     <div className="text-left">
                       <div className="font-medium">Stok Hareketleri</div>
@@ -401,7 +426,11 @@ export default function Dashboard() {
                     </div>
                   </Button>
 
-                  <Button onClick={() => navigate("/stock/alerts")} className="flex items-center gap-2 h-20" variant="outline">
+                  <Button
+                    onClick={() => navigate("/stock/alerts")}
+                    className="flex items-center gap-2 h-20"
+                    variant="outline"
+                  >
                     <Bell className="h-6 w-6" />
                     <div className="text-left">
                       <div className="font-medium">Stok Uyarıları</div>
@@ -428,7 +457,7 @@ export default function Dashboard() {
               />
               <KpiCard
                 title="Düşük Stok Uyarısı"
-                value={alertsLoading ? "..." : (alertsData?.items?.length || 0)}
+                value={alertsLoading ? "..." : alertsData?.items?.length || 0}
                 icon={AlertTriangle}
                 subtitle="Kritik stok seviyesindeki ürünler"
                 trend={inventoryKpis.lowStockCount > 0 ? "down" : "neutral"}
@@ -444,7 +473,10 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="space-y-4">
                     {itemsData.items.slice(0, 5).map((item: any) => (
-                      <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
                         <div className="flex flex-col">
                           <span className="font-medium">{item.name}</span>
                           <span className="text-sm text-muted-foreground">SKU: {item.sku}</span>
@@ -453,7 +485,9 @@ export default function Dashboard() {
                           <div className="font-medium">{formatCurrency(item.price)}</div>
                           <div
                             className={`text-sm ${
-                              item.reorderLevel && item.stock <= item.reorderLevel ? "text-destructive" : "text-muted-foreground"
+                              item.reorderLevel && item.stock <= item.reorderLevel
+                                ? "text-destructive"
+                                : "text-muted-foreground"
                             }`}
                           >
                             Stok: {item.stock}
@@ -488,7 +522,9 @@ export default function Dashboard() {
                         </div>
                         <div className="text-right">
                           <div className="text-destructive font-medium">Mevcut: {alert.stock}</div>
-                          <div className="text-sm text-muted-foreground">Kritik: {alert.reorderLevel}</div>
+                          <div className="text-sm text-muted-foreground">
+                            Kritik: {alert.reorderLevel}
+                          </div>
                         </div>
                       </div>
                     ))}
