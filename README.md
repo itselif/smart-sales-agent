@@ -10,6 +10,8 @@ cd E:\smart-sales-agent
 
 # 2) (Opsiyonel) sanal ortamı aktif et
 .\.venv\Scripts\activate
+.\.venv312\Scripts\activate
+
 
 # 3) .env içinde olduğundan emin ol (örnek içerik)
 # GOOGLE_API_KEY=.....
