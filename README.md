@@ -12,6 +12,8 @@ cd E:\smart-sales-agent
 .\.venv\Scripts\activate
 .\.venv312\Scripts\activate
 
+# Requiremts içeriğini indir
+pip install -r requirements.txt
 
 # 3) .env içinde olduğundan emin ol (örnek içerik)
 # GOOGLE_API_KEY=.....
