@@ -12,6 +12,9 @@ const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_BASE ||
   "http://localhost:8000"; // <- boş bırakma, fallback dursun
+const USE_MOCKS = String(import.meta.env.VITE_USE_MOCKS || "").toLowerCase() === "true";
+let mockLoginFn: undefined | ((p: { email?: string; socialCode?: string; password: string }) => Promise<any>);
+try { mockLoginFn = (await import("@/lib/mocks/auth")).mockLogin; } catch {}
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -42,19 +45,29 @@ export default function Login() {
       if (socialCode.trim()) payload.socialCode = socialCode.trim();
       else payload.email = email.trim();
 
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const body = await res.json().catch(() => ({} as any));
+      let body: any;
+      if (USE_MOCKS && mockLoginFn) {
+        body = await mockLoginFn(payload);
+      } else {
+        const res = await fetch(`${API_BASE}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        body = await res.json().catch(() => ({} as any));
+        if (!res.ok) {
+          const d = body?.detail || body;
+          const msg = d?.errorMessage || d?.message || (typeof d === "string" ? d : "Giriş başarısız");
+          toast({ title: "Giriş başarısız", description: msg, variant: "destructive" });
+          return;
+        }
+      }
 
       // BE artık token'ı her zaman body'ye koyuyor.
       const accessToken = body?.accessToken;
       const refreshToken = body?.refreshToken;
 
-      if (!res.ok || !accessToken) {
+      if (!accessToken) {
         const d = body?.detail || body;
         const msg =
           d?.errorMessage ||

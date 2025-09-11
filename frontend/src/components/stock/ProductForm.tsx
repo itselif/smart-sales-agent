@@ -7,6 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useCreateItem, useUpdateItem } from '@/lib/hooks';
 import { useUserStore } from '@/lib/stores';
 import type { InventoryItem } from '@/lib/api';
@@ -29,7 +33,27 @@ interface ProductFormProps {
   item?: InventoryItem | null;
 }
 
+// Kategori seçenekleri
+const CATEGORY_OPTIONS = [
+  'Teknoloji',
+  'Gıda',
+  'Ev',
+  'Giyim',
+  'Spor',
+  'Kitap',
+  'Oyuncak',
+  'Kozmetik',
+  'Sağlık',
+  'Bahçe',
+  'Otomotiv',
+  'Ofis',
+  'Müzik',
+  'Sanat',
+  'Diğer'
+];
+
 export function ProductForm({ open, onOpenChange, item }: ProductFormProps) {
+  const [comboboxOpen, setComboboxOpen] = useState(false);
   const { currentStoreId } = useUserStore();
   const createMutation = useCreateItem();
   const updateMutation = useUpdateItem();
@@ -55,6 +79,7 @@ export function ProductForm({ open, onOpenChange, item }: ProductFormProps) {
   });
 
   const isActive = watch('isActive');
+  const selectedCategory = watch('category');
 
   const onSubmit = async (data: ProductFormData) => {
     if (!currentStoreId) return;
@@ -125,11 +150,47 @@ export function ProductForm({ open, onOpenChange, item }: ProductFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="category">Kategori</Label>
-            <Input
-              id="category"
-              {...register('category')}
-              placeholder="Kategori"
-            />
+            <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={comboboxOpen}
+                  className="w-full justify-between"
+                >
+                  {selectedCategory || "Kategori seçin..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0">
+                <Command>
+                  <CommandInput placeholder="Kategori ara..." />
+                  <CommandList>
+                    <CommandEmpty>Kategori bulunamadı.</CommandEmpty>
+                    <CommandGroup>
+                      {CATEGORY_OPTIONS.map((category) => (
+                        <CommandItem
+                          key={category}
+                          value={category}
+                          onSelect={(currentValue) => {
+                            setValue('category', currentValue === selectedCategory ? "" : currentValue);
+                            setComboboxOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedCategory === category ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {category}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-2">

@@ -107,21 +107,39 @@ async def _startup() -> None:
         print(f"[MB][startup] disabled (MB_ACTIVE={MB_ACTIVE}, suffix={'OK' if MB_SUFFIX else 'MISSING'}, token={'OK' if MB_TOKEN else 'MISSING'})")
         app.state.mb_client = None
 
-    # Sales / Stock / Report servisleri
-    sales_repo = MindbricksSalesRepository(app.state.mb_client) if app.state.mb_client else None
-    sales_agent = SalesAgent(sales_repo=sales_repo)
+    # Repository'leri yapılandır - Mindbricks yoksa InMemory kullan
+    try:
+        if app.state.mb_client:
+            # Mindbricks repository'leri
+            sales_repo = MindbricksSalesRepository(app.state.mb_client)
+            stock_repo = MindbricksStockRepository(app.state.mb_client)
+            print("[startup] Using Mindbricks repositories")
+        else:
+            # InMemory repository'leri
+            from core.repositories.memory import InMemorySalesRepository, InMemoryStockRepository
+            sales_repo = InMemorySalesRepository("data/sales.json")
+            stock_repo = InMemoryStockRepository("data/stock.json")
+            print("[startup] Using InMemory repositories")
+            
+        # Agents ve Services
+        sales_agent = SalesAgent(sales_repo=sales_repo)
+        stock_agent = StockAgent(sales_agent=sales_agent, stock_repo=stock_repo)
+        report_agent = ReportAgent(output_dir=str(REPORT_DIR))
 
-    stock_repo = MindbricksStockRepository(app.state.mb_client) if app.state.mb_client else None
-    stock_agent = StockAgent(sales_agent=sales_agent, stock_repo=stock_repo)
-
-    report_agent = ReportAgent(output_dir=str(REPORT_DIR))
-
-    app.state.sales_svc  = SalesService(sales_agent,  mb=app.state.mb_client)
-    app.state.stock_svc  = StockService(stock_agent,  mb=app.state.mb_client)
-    app.state.report_svc = ReportService(
-        report_agent, mb=app.state.mb_client,
-        public_mount_prefix="/reports", report_dir=str(REPORT_DIR)
-    )
+        app.state.sales_svc  = SalesService(sales_agent,  mb=app.state.mb_client)
+        app.state.stock_svc  = StockService(stock_agent,  mb=app.state.mb_client)
+        app.state.report_svc = ReportService(
+            report_agent, mb=app.state.mb_client,
+            public_mount_prefix="/reports", report_dir=str(REPORT_DIR)
+        )
+        print("[startup] Services configured successfully")
+        
+    except Exception as e:
+        print(f"[startup] Error configuring repositories: {e}")
+        # Fallback: minimal services
+        app.state.sales_svc = None
+        app.state.stock_svc = None
+        app.state.report_svc = None
 
 # ========== Helpers ==========
 def _need_mb(mb: Optional[MindbricksClient]) -> MindbricksClient:
@@ -182,8 +200,16 @@ async def report_download(name: str = Query(...)):
 # ---- STORES LIST (proxy) ----
 @app.get("/stores/list")
 async def stores_list():
+    # Mindbricks client yoksa mock data döndür
     if not app.state.mb_client:
-        return {"stores": []}
+        mock_stores = [
+            {"id": "S1", "name": "İstanbul-Merkez", "fullname": "İstanbul Merkez Mağaza", "city": "İstanbul", "active": True},
+            {"id": "S2", "name": "Ankara-Çankaya", "fullname": "Ankara Çankaya Şube", "city": "Ankara", "active": True},
+            {"id": "S3", "name": "İzmir-Kordon", "fullname": "İzmir Kordon Şube", "city": "İzmir", "active": True},
+            {"id": "S4", "name": "Bursa-Nilüfer", "fullname": "Bursa Nilüfer Şube", "city": "Bursa", "active": True},
+            {"id": "S5", "name": "Antalya-Konyaaltı", "fullname": "Antalya Konyaaltı Şube", "city": "Antalya", "active": True},
+        ]
+        return {"stores": mock_stores, "source": "mock"}
 
     service = os.getenv("MINDBRICKS_STORE_SERVICE", "storemanagement").strip() or "storemanagement"
     env_path = (os.getenv("MINDBRICKS_STORES_LIST_PATH") or "/stores").strip()
@@ -351,6 +377,191 @@ async def orchestrate_llm_post(payload: dict = Body(...)):
     except Exception as e:
         import logging; logging.exception("orchestrate failed")
         raise HTTPException(status_code=500, detail=f"orchestrate_failed: {e}")
+
+# Dashboard endpoints
+@app.get("/dashboard/summary")
+async def dashboard_summary(store_id: str = Query(..., description="Mağaza ID")):
+    """Dashboard özet verileri - agent'lardan alınır"""
+    if not app.state.sales_svc or not app.state.stock_svc:
+        raise HTTPException(status_code=503, detail="Services not available")
+    
+    try:
+        # Sales analysis - son 30 günlük veri
+        sales_analysis = await app.state.sales_svc.analyze(store_id, days=30)
+        
+        # Stock analysis
+        stock_analysis = await app.state.stock_svc.analysis(store_id)
+        
+        # Dashboard verilerini hesapla
+        total_revenue = sales_analysis.get("total_revenue", 0.0)
+        total_sales = sales_analysis.get("total_sales", 0)
+        product_count = len(stock_analysis.get("products", []))
+        critical_count = len(stock_analysis.get("critical_products", []))
+        
+        # Haftalık trend
+        weekly_trend = sales_analysis.get("weekly_trend", 0.0)
+        if weekly_trend > 0.05:
+            trend_label = "artış"
+        elif weekly_trend < -0.05:
+            trend_label = "azalış"
+        else:
+            trend_label = "stabil"
+        
+        return {
+            "store_id": store_id,
+            "total_revenue": total_revenue,
+            "total_sales": total_sales,
+            "product_count": product_count,
+            "critical_count": critical_count,
+            "weekly_trend": weekly_trend,
+            "trend_label": trend_label,
+            "last_updated": "2025-08-27T00:00:00Z"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Dashboard failed: {e}")
+
+# Inventory endpoints
+@app.get("/inventory/items")
+async def inventory_items(
+    storeId: str = Query(..., description="Mağaza ID"),
+    page: int = Query(1, description="Sayfa numarası"),
+    size: int = Query(10, description="Sayfa boyutu"),
+    q: str = Query("", description="Arama terimi"),
+    category: str = Query("", description="Kategori filtresi"),
+    isActive: bool = Query(True, description="Aktif ürünler"),
+    sort: str = Query("name", description="Sıralama")
+):
+    """Inventory items listesi"""
+    if not app.state.stock_svc:
+        raise HTTPException(status_code=503, detail="Stock service not available")
+    
+    try:
+        # Stock analysis'dan ürünleri al
+        analysis = await app.state.stock_svc.analysis(storeId)
+        products = analysis.get("products", [])
+        
+        # Filtreleme
+        if q:
+            products = [p for p in products if q.lower() in p.get("name", "").lower()]
+        if category:
+            products = [p for p in products if p.get("category") == category]
+        if isActive is not None:
+            products = [p for p in products if p.get("is_active", True) == isActive]
+        
+        # Sıralama
+        if sort == "name":
+            products.sort(key=lambda x: x.get("name", ""))
+        elif sort == "-createdAt":
+            products.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        
+        # Sayfalama
+        total = len(products)
+        start = (page - 1) * size
+        end = start + size
+        items = products[start:end]
+        
+        # Frontend'in beklediği formata çevir
+        formatted_items = []
+        for p in items:
+            formatted_items.append({
+                "id": p.get("product_id", ""),
+                "storeId": storeId,
+                "sku": p.get("product_id", ""),
+                "name": p.get("name", ""),
+                "price": p.get("price", 0.0),
+                "stock": p.get("current_stock", 0),
+                "reorderLevel": p.get("min_required", 0),
+                "category": p.get("category", ""),
+                "isActive": True,
+                "createdAt": "2025-08-27T00:00:00Z",
+                "updatedAt": "2025-08-27T00:00:00Z"
+            })
+        
+        return {
+            "items": formatted_items,
+            "total": total,
+            "page": page,
+            "size": size,
+            "pages": (total + size - 1) // size
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Inventory items failed: {e}")
+
+@app.get("/inventory/alerts")
+async def inventory_alerts(
+    storeId: str = Query(..., description="Mağaza ID"),
+    onlyOpen: bool = Query(True, description="Sadece açık uyarılar")
+):
+    """Low stock alerts"""
+    if not app.state.stock_svc:
+        raise HTTPException(status_code=503, detail="Stock service not available")
+    
+    try:
+        analysis = await app.state.stock_svc.analysis(storeId)
+        critical_products = analysis.get("critical_products", [])
+        
+        alerts = []
+        for p in critical_products:
+            alerts.append({
+                "itemId": p.get("product_id", ""),
+                "sku": p.get("product_id", ""),
+                "name": p.get("name", ""),
+                "stock": p.get("current_stock", 0),
+                "reorderLevel": p.get("min_required", 0),
+                "daysToDeplete": p.get("estimated_days_left"),
+                "isAcknowledged": False
+            })
+        
+        return {"items": alerts}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Alerts failed: {e}")
+
+# Availability endpoint - ürünün hangi mağazalarda kaç adet olduğunu gösterir
+@app.get("/inventory/availability/{sku}")
+async def inventory_availability(sku: str):
+    """Ürünün tüm mağazalardaki stok durumu"""
+    if not app.state.stock_svc:
+        raise HTTPException(status_code=503, detail="Stock service not available")
+    
+    try:
+        # Tüm mağazalar için stok bilgisi topla
+        stores = ["S1", "S2", "S3", "S4", "S5"]  # Mock store listesi
+        availability = []
+        
+        for store_id in stores:
+            try:
+                analysis = await app.state.stock_svc.analysis(store_id)
+                products = analysis.get("products", [])
+                
+                # SKU'ya göre ürün bul
+                product = next((p for p in products if p.get("product_id") == sku), None)
+                if product:
+                    availability.append({
+                        "store_id": store_id,
+                        "store_name": f"Mağaza {store_id}",
+                        "stock": product.get("current_stock", 0),
+                        "min_required": product.get("min_required", 0),
+                        "price": product.get("price", 0.0),
+                        "category": product.get("category", ""),
+                        "is_critical": product.get("is_critical", False)
+                    })
+            except Exception as e:
+                # Mağaza hatası - log'la ama devam et
+                print(f"[availability] Store {store_id} error: {e}")
+                continue
+        
+        return {
+            "sku": sku,
+            "availability": availability,
+            "total_stores": len(availability),
+            "total_stock": sum(item["stock"] for item in availability)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Availability check failed: {e}")
 
 # Test endpoint
 @app.get("/test/inventory")

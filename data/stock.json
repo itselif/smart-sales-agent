@@ -1,1 +1,104 @@
-[]
+[
+  {
+    "id": "ST1", "product_id": "TEL-IPH14", "name": "Akıllı Telefon iPhone 14", "category": "Teknoloji", "current_stock": 15, "min_required": 5, "max_stock": 50, "price": 45000.0, "store_id": "S1", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST2", "product_id": "LPT-DELLXPS", "name": "Dizüstü Dell XPS 13", "category": "Teknoloji", "current_stock": 8, "min_required": 3, "max_stock": 25, "price": 52000.0, "store_id": "S1", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST3", "product_id": "TV-SAM-55", "name": "Samsung 55'' TV", "category": "Teknoloji", "current_stock": 12, "min_required": 4, "max_stock": 30, "price": 28000.0, "store_id": "S1", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST4", "product_id": "HD-SONYXM4", "name": "Kulaklık Sony XM4", "category": "Teknoloji", "current_stock": 25, "min_required": 10, "max_stock": 60, "price": 9000.0, "store_id": "S1", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST5", "product_id": "GID-KAHVE", "name": "Kahve", "category": "Gıda", "current_stock": 80, "min_required": 20, "max_stock": 200, "price": 120.0, "store_id": "S1", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST6", "product_id": "HD-AIRP2", "name": "AirPods 2", "category": "Teknoloji", "current_stock": 18, "min_required": 10, "max_stock": 40, "price": 5500.0, "store_id": "S1", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST7", "product_id": "TV-LG-65", "name": "LG 65'' OLED", "category": "Teknoloji", "current_stock": 3, "min_required": 2, "max_stock": 10, "price": 76000.0, "store_id": "S1", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST8", "product_id": "BIL-MON-27", "name": "27'' Monitör", "category": "Teknoloji", "current_stock": 12, "min_required": 6, "max_stock": 30, "price": 7000.0, "store_id": "S1", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST9", "product_id": "EV-SUP-SUPR", "name": "Süpürge", "category": "Ev", "current_stock": 20, "min_required": 6, "max_stock": 50, "price": 4500.0, "store_id": "S1", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST10", "product_id": "HD-JBL-500", "name": "Kulaklık JBL 500BT", "category": "Teknoloji", "current_stock": 15, "min_required": 8, "max_stock": 35, "price": 2500.0, "store_id": "S1", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST11", "product_id": "TEL-ANDR-PIX7", "name": "Akıllı Telefon Pixel 7", "category": "Teknoloji", "current_stock": 18, "min_required": 6, "max_stock": 40, "price": 32000.0, "store_id": "S2", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST12", "product_id": "LPT-MAC-M2", "name": "Macbook Air M2", "category": "Teknoloji", "current_stock": 6, "min_required": 2, "max_stock": 15, "price": 65000.0, "store_id": "S2", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST13", "product_id": "TV-LG-65", "name": "LG 65'' OLED", "category": "Teknoloji", "current_stock": 4, "min_required": 2, "max_stock": 12, "price": 76000.0, "store_id": "S2", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST14", "product_id": "HD-AIRP2", "name": "AirPods 2", "category": "Teknoloji", "current_stock": 30, "min_required": 10, "max_stock": 60, "price": 5500.0, "store_id": "S2", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST15", "product_id": "TEL-IPH14", "name": "Akıllı Telefon iPhone 14", "category": "Teknoloji", "current_stock": 8, "min_required": 5, "max_stock": 25, "price": 45000.0, "store_id": "S2", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST16", "product_id": "GID-KAHVE", "name": "Kahve", "category": "Gıda", "current_stock": 45, "min_required": 20, "max_stock": 100, "price": 120.0, "store_id": "S2", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST17", "product_id": "TEL-ANDR-S23", "name": "Akıllı Telefon Galaxy S23", "category": "Teknoloji", "current_stock": 6, "min_required": 3, "max_stock": 20, "price": 42000.0, "store_id": "S2", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST18", "product_id": "TEL-ANDR-S23", "name": "Akıllı Telefon Galaxy S23", "category": "Teknoloji", "current_stock": 10, "min_required": 3, "max_stock": 25, "price": 42000.0, "store_id": "S3", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST19", "product_id": "BIL-MON-27", "name": "27'' Monitör", "category": "Teknoloji", "current_stock": 15, "min_required": 6, "max_stock": 35, "price": 7000.0, "store_id": "S3", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST20", "product_id": "GID-CAY", "name": "Çay", "category": "Gıda", "current_stock": 35, "min_required": 15, "max_stock": 80, "price": 90.0, "store_id": "S3", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST21", "product_id": "TEL-IPH14", "name": "Akıllı Telefon iPhone 14", "category": "Teknoloji", "current_stock": 7, "min_required": 5, "max_stock": 20, "price": 45000.0, "store_id": "S3", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST22", "product_id": "HD-AIRP2", "name": "AirPods 2", "category": "Teknoloji", "current_stock": 12, "min_required": 10, "max_stock": 30, "price": 5500.0, "store_id": "S3", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST23", "product_id": "LPT-MAC-M2", "name": "Macbook Air M2", "category": "Teknoloji", "current_stock": 4, "min_required": 2, "max_stock": 12, "price": 65000.0, "store_id": "S3", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST24", "product_id": "GID-SUT", "name": "Süt", "category": "Gıda", "current_stock": 60, "min_required": 25, "max_stock": 120, "price": 35.0, "store_id": "S3", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST25", "product_id": "TV-PH-50", "name": "Philips 50'' TV", "category": "Teknoloji", "current_stock": 12, "min_required": 4, "max_stock": 30, "price": 23000.0, "store_id": "S4", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST26", "product_id": "BIL-PC-GAM", "name": "Oyun Bilgisayarı", "category": "Teknoloji", "current_stock": 5, "min_required": 2, "max_stock": 15, "price": 38000.0, "store_id": "S4", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST27", "product_id": "EV-SUP-SUPR", "name": "Süpürge", "category": "Ev", "current_stock": 25, "min_required": 6, "max_stock": 60, "price": 4500.0, "store_id": "S4", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST28", "product_id": "TV-SAM-55", "name": "Samsung 55'' TV", "category": "Teknoloji", "current_stock": 6, "min_required": 4, "max_stock": 20, "price": 28000.0, "store_id": "S4", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST29", "product_id": "GID-SUT", "name": "Süt", "category": "Gıda", "current_stock": 100, "min_required": 25, "max_stock": 200, "price": 35.0, "store_id": "S5", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST30", "product_id": "GID-YOG", "name": "Yoğurt", "category": "Gıda", "current_stock": 80, "min_required": 20, "max_stock": 150, "price": 50.0, "store_id": "S5", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST31", "product_id": "HD-JBL-500", "name": "Kulaklık JBL 500BT", "category": "Teknoloji", "current_stock": 22, "min_required": 8, "max_stock": 45, "price": 2500.0, "store_id": "S5", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST32", "product_id": "GID-KAHVE", "name": "Kahve", "category": "Gıda", "current_stock": 70, "min_required": 20, "max_stock": 150, "price": 120.0, "store_id": "S5", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST33", "product_id": "BIL-MON-27", "name": "27'' Monitör", "category": "Teknoloji", "current_stock": 8, "min_required": 6, "max_stock": 25, "price": 7000.0, "store_id": "S5", "last_updated": "2025-08-27T10:00:00Z"
+  },
+  {
+    "id": "ST34", "product_id": "GID-CAY", "name": "Çay", "category": "Gıda", "current_stock": 45, "min_required": 15, "max_stock": 80, "price": 90.0, "store_id": "S5", "last_updated": "2025-08-27T10:00:00Z"
+  }
+]

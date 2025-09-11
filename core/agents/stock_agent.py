@@ -117,7 +117,29 @@ class StockAgent:
     async def get_stock_data(self, store_id: str) -> List[Dict[str, Any]]:
         if self.stock_repo:
             rows: List[StockRow] = await self.stock_repo.get_stock_snapshot(store_id)
-            return [r.model_dump() for r in rows]
+            # Pydantic v1/v2 uyumluluğu için
+            result = []
+            for r in rows:
+                try:
+                    if hasattr(r, 'model_dump'):
+                        result.append(r.model_dump())
+                    elif hasattr(r, 'dict'):
+                        result.append(r.dict())
+                    else:
+                        result.append(dict(r))
+                except Exception:
+                    # Fallback: manual conversion
+                    result.append({
+                        'product_id': getattr(r, 'product_id', ''),
+                        'name': getattr(r, 'name', ''),
+                        'current_stock': getattr(r, 'current_stock', 0),
+                        'min_required': getattr(r, 'min_required', 0),
+                        'lead_time_days': getattr(r, 'lead_time_days', 0),
+                        'category': getattr(r, 'category', ''),
+                        'price': getattr(r, 'price', 0.0),
+                        'supplier': getattr(r, 'supplier', ''),
+                    })
+            return result
         # fallback: mock KAPALI (Mindbricks bağlantısını net görmek için)
         return []
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Search, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,7 @@ export default function ProductsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
@@ -40,8 +41,19 @@ export default function ProductsPage() {
     isActive: activeFilter === 'true' ? true : activeFilter === 'false' ? false : undefined,
     page,
     size: pageSize,
-    sort: sortBy,
+    sort: `${sortBy}${sortOrder === 'desc' ? '-desc' : ''}`,
   });
+
+  // Kategorileri dinamik olarak çek
+  const availableCategories = useMemo(() => {
+    if (!itemsData?.items) return [];
+    const categories = new Set(
+      itemsData.items
+        .map(item => item.category)
+        .filter(Boolean) // null/undefined değerleri filtrele
+    );
+    return Array.from(categories).sort();
+  }, [itemsData?.items]);
 
   // şimdilik sabit: gerçek rolde API bağlanınca değiştirilebilir
   const canEdit = true;
@@ -91,7 +103,23 @@ export default function ProductsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Ürün Yönetimi</h1>
-          <p className="text-muted-foreground">Toplam {itemsData?.total || 0} ürün</p>
+          <div className="flex items-center gap-4">
+            <p className="text-muted-foreground">Toplam {itemsData?.total || 0} ürün</p>
+            {sortBy && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Sıralama:</span>
+                <span className="font-medium">
+                  {sortBy === 'name' && 'İsim'}
+                  {sortBy === 'stock' && 'Stok'}
+                  {sortBy === 'price' && 'Fiyat'}
+                  {sortBy === 'createdAt' && 'Oluşturma Tarihi'}
+                </span>
+                <span className="text-xs">
+                  {sortOrder === 'asc' ? '↑' : '↓'}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         {canEdit && (
           <Button onClick={() => setShowCreateForm(true)}>
@@ -107,7 +135,7 @@ export default function ProductsPage() {
           <CardTitle>Filtreler</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -124,9 +152,11 @@ export default function ProductsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tüm Kategoriler</SelectItem>
-                <SelectItem value="Elektronik">Elektronik</SelectItem>
-                <SelectItem value="Giyim">Giyim</SelectItem>
-                <SelectItem value="Ev">Ev</SelectItem>
+                {availableCategories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -141,17 +171,29 @@ export default function ProductsPage() {
               </SelectContent>
             </Select>
 
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sırala" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="name">İsim</SelectItem>
-                <SelectItem value="stock">Stok</SelectItem>
-                <SelectItem value="price">Fiyat</SelectItem>
-                <SelectItem value="createdAt">Oluşturma Tarihi</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Sırala" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">İsim</SelectItem>
+                  <SelectItem value="stock">Stok</SelectItem>
+                  <SelectItem value="price">Fiyat</SelectItem>
+                  <SelectItem value="createdAt">Oluşturma Tarihi</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={sortOrder} onValueChange={(value: 'asc' | 'desc') => setSortOrder(value)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="asc">Artan ↑</SelectItem>
+                  <SelectItem value="desc">Azalan ↓</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="mt-4">
@@ -162,6 +204,7 @@ export default function ProductsPage() {
                 setCategoryFilter('all');
                 setActiveFilter('all');
                 setSortBy('name');
+                setSortOrder('asc');
                 setPage(1);
               }}
             >

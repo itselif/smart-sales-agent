@@ -1,1 +1,254 @@
-[]
+[
+  {
+    "id": "S1-001", "product_id": "TEL-IPH14", "product_name": "Akıllı Telefon iPhone 14", "category": "Teknoloji", "quantity": 3, "unit_price": 45000.0, "total_amount": 135000.0, "sale_date": "2025-08-27", "store_id": "S1", "date": "2025-08-27"
+  },
+  {
+    "id": "S1-002", "product_id": "LPT-DELLXPS", "product_name": "Dizüstü Dell XPS 13", "category": "Teknoloji", "quantity": 2, "unit_price": 52000.0, "total_amount": 104000.0, "sale_date": "2025-08-26", "store_id": "S1", "date": "2025-08-26"
+  },
+  {
+    "id": "S1-003", "product_id": "TV-SAM-55", "product_name": "Samsung 55'' TV", "category": "Teknoloji", "quantity": 1, "unit_price": 28000.0, "total_amount": 28000.0, "sale_date": "2025-08-25", "store_id": "S1", "date": "2025-08-25"
+  },
+  {
+    "id": "S1-004", "product_id": "HD-SONYXM4", "product_name": "Kulaklık Sony XM4", "category": "Teknoloji", "quantity": 5, "unit_price": 9000.0, "total_amount": 45000.0, "sale_date": "2025-08-24", "store_id": "S1", "date": "2025-08-24"
+  },
+  {
+    "id": "S1-005", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 20, "unit_price": 120.0, "total_amount": 2400.0, "sale_date": "2025-08-23", "store_id": "S1", "date": "2025-08-23"
+  },
+  {
+    "id": "S1-006", "product_id": "HD-AIRP2", "product_name": "AirPods 2", "category": "Teknoloji", "quantity": 8, "unit_price": 5500.0, "total_amount": 44000.0, "sale_date": "2025-08-22", "store_id": "S1", "date": "2025-08-22"
+  },
+  {
+    "id": "S1-007", "product_id": "TV-LG-65", "product_name": "LG 65'' OLED", "category": "Teknoloji", "quantity": 1, "unit_price": 76000.0, "total_amount": 76000.0, "sale_date": "2025-08-21", "store_id": "S1", "date": "2025-08-21"
+  },
+  {
+    "id": "S1-008", "product_id": "BIL-MON-27", "product_name": "27'' Monitör", "category": "Teknoloji", "quantity": 3, "unit_price": 7000.0, "total_amount": 21000.0, "sale_date": "2025-08-20", "store_id": "S1", "date": "2025-08-20"
+  },
+  {
+    "id": "S1-009", "product_id": "EV-SUP-SUPR", "product_name": "Süpürge", "category": "Ev", "quantity": 4, "unit_price": 4500.0, "total_amount": 18000.0, "sale_date": "2025-08-19", "store_id": "S1", "date": "2025-08-19"
+  },
+  {
+    "id": "S1-010", "product_id": "HD-JBL-500", "product_name": "Kulaklık JBL 500BT", "category": "Teknoloji", "quantity": 6, "unit_price": 2500.0, "total_amount": 15000.0, "sale_date": "2025-08-18", "store_id": "S1", "date": "2025-08-18"
+  },
+  {
+    "id": "S1-011", "product_id": "TEL-IPH14", "product_name": "Akıllı Telefon iPhone 14", "category": "Teknoloji", "quantity": 2, "unit_price": 45000.0, "total_amount": 90000.0, "sale_date": "2025-08-17", "store_id": "S1", "date": "2025-08-17"
+  },
+  {
+    "id": "S1-012", "product_id": "LPT-DELLXPS", "product_name": "Dizüstü Dell XPS 13", "category": "Teknoloji", "quantity": 1, "unit_price": 52000.0, "total_amount": 52000.0, "sale_date": "2025-08-16", "store_id": "S1", "date": "2025-08-16"
+  },
+  {
+    "id": "S1-013", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 15, "unit_price": 120.0, "total_amount": 1800.0, "sale_date": "2025-08-15", "store_id": "S1", "date": "2025-08-15"
+  },
+  {
+    "id": "S1-014", "product_id": "HD-SONYXM4", "product_name": "Kulaklık Sony XM4", "category": "Teknoloji", "quantity": 3, "unit_price": 9000.0, "total_amount": 27000.0, "sale_date": "2025-08-14", "store_id": "S1", "date": "2025-08-14"
+  },
+  {
+    "id": "S1-015", "product_id": "TV-SAM-55", "product_name": "Samsung 55'' TV", "category": "Teknoloji", "quantity": 1, "unit_price": 28000.0, "total_amount": 28000.0, "sale_date": "2025-08-13", "store_id": "S1", "date": "2025-08-13"
+  },
+  {
+    "id": "S1-016", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 10, "unit_price": 120.0, "total_amount": 1200.0, "sale_date": "2025-08-12", "store_id": "S1", "date": "2025-08-12"
+  },
+  {
+    "id": "S1-017", "product_id": "HD-AIRP2", "product_name": "AirPods 2", "category": "Teknoloji", "quantity": 2, "unit_price": 5500.0, "total_amount": 11000.0, "sale_date": "2025-08-11", "store_id": "S1", "date": "2025-08-11"
+  },
+  {
+    "id": "S1-018", "product_id": "EV-SUP-SUPR", "product_name": "Süpürge", "category": "Ev", "quantity": 2, "unit_price": 4500.0, "total_amount": 9000.0, "sale_date": "2025-08-10", "store_id": "S1", "date": "2025-08-10"
+  },
+  {
+    "id": "S1-019", "product_id": "BIL-MON-27", "product_name": "27'' Monitör", "category": "Teknoloji", "quantity": 1, "unit_price": 7000.0, "total_amount": 7000.0, "sale_date": "2025-08-09", "store_id": "S1", "date": "2025-08-09"
+  },
+  {
+    "id": "S1-020", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 8, "unit_price": 120.0, "total_amount": 960.0, "sale_date": "2025-08-08", "store_id": "S1", "date": "2025-08-08"
+  },
+  {
+    "id": "S1-021", "product_id": "HD-JBL-500", "product_name": "Kulaklık JBL 500BT", "category": "Teknoloji", "quantity": 1, "unit_price": 2500.0, "total_amount": 2500.0, "sale_date": "2025-08-07", "store_id": "S1", "date": "2025-08-07"
+  },
+  {
+    "id": "S1-022", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 5, "unit_price": 120.0, "total_amount": 600.0, "sale_date": "2025-08-06", "store_id": "S1", "date": "2025-08-06"
+  },
+  {
+    "id": "S1-023", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 3, "unit_price": 120.0, "total_amount": 360.0, "sale_date": "2025-08-05", "store_id": "S1", "date": "2025-08-05"
+  },
+  {
+    "id": "S1-024", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 2, "unit_price": 120.0, "total_amount": 240.0, "sale_date": "2025-08-04", "store_id": "S1", "date": "2025-08-04"
+  },
+  {
+    "id": "S1-025", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 1, "unit_price": 120.0, "total_amount": 120.0, "sale_date": "2025-08-03", "store_id": "S1", "date": "2025-08-03"
+  },
+  {
+    "id": "S1-026", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 1, "unit_price": 120.0, "total_amount": 120.0, "sale_date": "2025-08-02", "store_id": "S1", "date": "2025-08-02"
+  },
+  {
+    "id": "S1-027", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 1, "unit_price": 120.0, "total_amount": 120.0, "sale_date": "2025-08-01", "store_id": "S1", "date": "2025-08-01"
+  },
+  {
+    "id": "S1-028", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 1, "unit_price": 120.0, "total_amount": 120.0, "sale_date": "2025-07-31", "store_id": "S1", "date": "2025-07-31"
+  },
+  {
+    "id": "S1-029", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 1, "unit_price": 120.0, "total_amount": 120.0, "sale_date": "2025-07-30", "store_id": "S1", "date": "2025-07-30"
+  },
+  {
+    "id": "S1-030", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 1, "unit_price": 120.0, "total_amount": 120.0, "sale_date": "2025-07-29", "store_id": "S1", "date": "2025-07-29"
+  },
+  {
+    "id": "S1-031", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 1, "unit_price": 120.0, "total_amount": 120.0, "sale_date": "2025-07-28", "store_id": "S1", "date": "2025-07-28"
+  },
+  {
+    "id": "S2-001", "product_id": "TEL-ANDR-PIX7", "product_name": "Akıllı Telefon Pixel 7", "category": "Teknoloji", "quantity": 2, "unit_price": 32000.0, "total_amount": 64000.0, "sale_date": "2025-08-27", "store_id": "S2", "date": "2025-08-27"
+  },
+  {
+    "id": "S2-002", "product_id": "LPT-MAC-M2", "product_name": "Macbook Air M2", "category": "Teknoloji", "quantity": 1, "unit_price": 65000.0, "total_amount": 65000.0, "sale_date": "2025-08-26", "store_id": "S2", "date": "2025-08-26"
+  },
+  {
+    "id": "S2-003", "product_id": "TV-LG-65", "product_name": "LG 65'' OLED", "category": "Teknoloji", "quantity": 1, "unit_price": 76000.0, "total_amount": 76000.0, "sale_date": "2025-08-25", "store_id": "S2", "date": "2025-08-25"
+  },
+  {
+    "id": "S2-004", "product_id": "HD-AIRP2", "product_name": "AirPods 2", "category": "Teknoloji", "quantity": 4, "unit_price": 5500.0, "total_amount": 22000.0, "sale_date": "2025-08-20", "store_id": "S2", "date": "2025-08-20"
+  },
+  {
+    "id": "S2-005", "product_id": "TEL-IPH14", "product_name": "Akıllı Telefon iPhone 14", "category": "Teknoloji", "quantity": 1, "unit_price": 45000.0, "total_amount": 45000.0, "sale_date": "2025-08-18", "store_id": "S2", "date": "2025-08-18"
+  },
+  {
+    "id": "S2-006", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 15, "unit_price": 120.0, "total_amount": 1800.0, "sale_date": "2025-08-16", "store_id": "S2", "date": "2025-08-16"
+  },
+  {
+    "id": "S2-007", "product_id": "TEL-ANDR-S23", "product_name": "Akıllı Telefon Galaxy S23", "category": "Teknoloji", "quantity": 1, "unit_price": 42000.0, "total_amount": 42000.0, "sale_date": "2025-08-15", "store_id": "S2", "date": "2025-08-15"
+  },
+  {
+    "id": "S2-008", "product_id": "HD-AIRP2", "product_name": "AirPods 2", "category": "Teknoloji", "quantity": 2, "unit_price": 5500.0, "total_amount": 11000.0, "sale_date": "2025-08-13", "store_id": "S2", "date": "2025-08-13"
+  },
+  {
+    "id": "S2-009", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 10, "unit_price": 120.0, "total_amount": 1200.0, "sale_date": "2025-08-11", "store_id": "S2", "date": "2025-08-11"
+  },
+  {
+    "id": "S2-010", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 8, "unit_price": 120.0, "total_amount": 960.0, "sale_date": "2025-08-08", "store_id": "S2", "date": "2025-08-08"
+  },
+  {
+    "id": "S2-011", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 5, "unit_price": 120.0, "total_amount": 600.0, "sale_date": "2025-08-05", "store_id": "S2", "date": "2025-08-05"
+  },
+  {
+    "id": "S2-012", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 3, "unit_price": 120.0, "total_amount": 360.0, "sale_date": "2025-08-02", "store_id": "S2", "date": "2025-08-02"
+  },
+  {
+    "id": "S2-013", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 2, "unit_price": 120.0, "total_amount": 240.0, "sale_date": "2025-07-30", "store_id": "S2", "date": "2025-07-30"
+  },
+  {
+    "id": "S2-014", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 1, "unit_price": 120.0, "total_amount": 120.0, "sale_date": "2025-07-28", "store_id": "S2", "date": "2025-07-28"
+  },
+  {
+    "id": "S3-001", "product_id": "TEL-ANDR-S23", "product_name": "Akıllı Telefon Galaxy S23", "category": "Teknoloji", "quantity": 2, "unit_price": 42000.0, "total_amount": 84000.0, "sale_date": "2025-08-27", "store_id": "S3", "date": "2025-08-27"
+  },
+  {
+    "id": "S3-002", "product_id": "BIL-MON-27", "product_name": "27'' Monitör", "category": "Teknoloji", "quantity": 3, "unit_price": 7000.0, "total_amount": 21000.0, "sale_date": "2025-08-26", "store_id": "S3", "date": "2025-08-26"
+  },
+  {
+    "id": "S3-003", "product_id": "GID-CAY", "product_name": "Çay", "category": "Gıda", "quantity": 25, "unit_price": 90.0, "total_amount": 2250.0, "sale_date": "2025-08-25", "store_id": "S3", "date": "2025-08-25"
+  },
+  {
+    "id": "S3-004", "product_id": "TEL-IPH14", "product_name": "Akıllı Telefon iPhone 14", "category": "Teknoloji", "quantity": 1, "unit_price": 45000.0, "total_amount": 45000.0, "sale_date": "2025-08-20", "store_id": "S3", "date": "2025-08-20"
+  },
+  {
+    "id": "S3-005", "product_id": "HD-AIRP2", "product_name": "AirPods 2", "category": "Teknoloji", "quantity": 3, "unit_price": 5500.0, "total_amount": 16500.0, "sale_date": "2025-08-18", "store_id": "S3", "date": "2025-08-18"
+  },
+  {
+    "id": "S3-006", "product_id": "LPT-MAC-M2", "product_name": "Macbook Air M2", "category": "Teknoloji", "quantity": 1, "unit_price": 65000.0, "total_amount": 65000.0, "sale_date": "2025-08-16", "store_id": "S3", "date": "2025-08-16"
+  },
+  {
+    "id": "S3-007", "product_id": "GID-SUT", "product_name": "Süt", "category": "Gıda", "quantity": 30, "unit_price": 35.0, "total_amount": 1050.0, "sale_date": "2025-08-15", "store_id": "S3", "date": "2025-08-15"
+  },
+  {
+    "id": "S3-008", "product_id": "GID-CAY", "product_name": "Çay", "category": "Gıda", "quantity": 20, "unit_price": 90.0, "total_amount": 1800.0, "sale_date": "2025-08-13", "store_id": "S3", "date": "2025-08-13"
+  },
+  {
+    "id": "S3-009", "product_id": "GID-SUT", "product_name": "Süt", "category": "Gıda", "quantity": 25, "unit_price": 35.0, "total_amount": 875.0, "sale_date": "2025-08-11", "store_id": "S3", "date": "2025-08-11"
+  },
+  {
+    "id": "S3-010", "product_id": "GID-CAY", "product_name": "Çay", "category": "Gıda", "quantity": 15, "unit_price": 90.0, "total_amount": 1350.0, "sale_date": "2025-08-08", "store_id": "S3", "date": "2025-08-08"
+  },
+  {
+    "id": "S3-011", "product_id": "GID-SUT", "product_name": "Süt", "category": "Gıda", "quantity": 20, "unit_price": 35.0, "total_amount": 700.0, "sale_date": "2025-08-05", "store_id": "S3", "date": "2025-08-05"
+  },
+  {
+    "id": "S3-012", "product_id": "GID-CAY", "product_name": "Çay", "category": "Gıda", "quantity": 10, "unit_price": 90.0, "total_amount": 900.0, "sale_date": "2025-08-02", "store_id": "S3", "date": "2025-08-02"
+  },
+  {
+    "id": "S3-013", "product_id": "GID-SUT", "product_name": "Süt", "category": "Gıda", "quantity": 15, "unit_price": 35.0, "total_amount": 525.0, "sale_date": "2025-07-30", "store_id": "S3", "date": "2025-07-30"
+  },
+  {
+    "id": "S3-014", "product_id": "GID-CAY", "product_name": "Çay", "category": "Gıda", "quantity": 8, "unit_price": 90.0, "total_amount": 720.0, "sale_date": "2025-07-28", "store_id": "S3", "date": "2025-07-28"
+  },
+  {
+    "id": "S4-001", "product_id": "TV-PH-50", "product_name": "Philips 50'' TV", "category": "Teknoloji", "quantity": 2, "unit_price": 23000.0, "total_amount": 46000.0, "sale_date": "2025-08-27", "store_id": "S4", "date": "2025-08-27"
+  },
+  {
+    "id": "S4-002", "product_id": "BIL-PC-GAM", "product_name": "Oyun Bilgisayarı", "category": "Teknoloji", "quantity": 1, "unit_price": 38000.0, "total_amount": 38000.0, "sale_date": "2025-08-26", "store_id": "S4", "date": "2025-08-26"
+  },
+  {
+    "id": "S4-003", "product_id": "EV-SUP-SUPR", "product_name": "Süpürge", "category": "Ev", "quantity": 6, "unit_price": 4500.0, "total_amount": 27000.0, "sale_date": "2025-08-20", "store_id": "S4", "date": "2025-08-20"
+  },
+  {
+    "id": "S4-004", "product_id": "TV-SAM-55", "product_name": "Samsung 55'' TV", "category": "Teknoloji", "quantity": 1, "unit_price": 28000.0, "total_amount": 28000.0, "sale_date": "2025-08-18", "store_id": "S4", "date": "2025-08-18"
+  },
+  {
+    "id": "S4-005", "product_id": "EV-SUP-SUPR", "product_name": "Süpürge", "category": "Ev", "quantity": 4, "unit_price": 4500.0, "total_amount": 18000.0, "sale_date": "2025-08-15", "store_id": "S4", "date": "2025-08-15"
+  },
+  {
+    "id": "S4-006", "product_id": "TV-PH-50", "product_name": "Philips 50'' TV", "category": "Teknoloji", "quantity": 1, "unit_price": 23000.0, "total_amount": 23000.0, "sale_date": "2025-08-13", "store_id": "S4", "date": "2025-08-13"
+  },
+  {
+    "id": "S4-007", "product_id": "EV-SUP-SUPR", "product_name": "Süpürge", "category": "Ev", "quantity": 2, "unit_price": 4500.0, "total_amount": 9000.0, "sale_date": "2025-08-08", "store_id": "S4", "date": "2025-08-08"
+  },
+  {
+    "id": "S4-008", "product_id": "EV-SUP-SUPR", "product_name": "Süpürge", "category": "Ev", "quantity": 1, "unit_price": 4500.0, "total_amount": 4500.0, "sale_date": "2025-08-05", "store_id": "S4", "date": "2025-08-05"
+  },
+  {
+    "id": "S4-009", "product_id": "EV-SUP-SUPR", "product_name": "Süpürge", "category": "Ev", "quantity": 1, "unit_price": 4500.0, "total_amount": 4500.0, "sale_date": "2025-08-02", "store_id": "S4", "date": "2025-08-02"
+  },
+  {
+    "id": "S4-010", "product_id": "EV-SUP-SUPR", "product_name": "Süpürge", "category": "Ev", "quantity": 1, "unit_price": 4500.0, "total_amount": 4500.0, "sale_date": "2025-07-30", "store_id": "S4", "date": "2025-07-30"
+  },
+  {
+    "id": "S4-011", "product_id": "EV-SUP-SUPR", "product_name": "Süpürge", "category": "Ev", "quantity": 1, "unit_price": 4500.0, "total_amount": 4500.0, "sale_date": "2025-07-28", "store_id": "S4", "date": "2025-07-28"
+  },
+  {
+    "id": "S5-001", "product_id": "GID-SUT", "product_name": "Süt", "category": "Gıda", "quantity": 40, "unit_price": 35.0, "total_amount": 1400.0, "sale_date": "2025-08-27", "store_id": "S5", "date": "2025-08-27"
+  },
+  {
+    "id": "S5-002", "product_id": "GID-YOG", "product_name": "Yoğurt", "category": "Gıda", "quantity": 35, "unit_price": 50.0, "total_amount": 1750.0, "sale_date": "2025-08-26", "store_id": "S5", "date": "2025-08-26"
+  },
+  {
+    "id": "S5-003", "product_id": "HD-JBL-500", "product_name": "Kulaklık JBL 500BT", "category": "Teknoloji", "quantity": 2, "unit_price": 2500.0, "total_amount": 5000.0, "sale_date": "2025-08-25", "store_id": "S5", "date": "2025-08-25"
+  },
+  {
+    "id": "S5-004", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 30, "unit_price": 120.0, "total_amount": 3600.0, "sale_date": "2025-08-20", "store_id": "S5", "date": "2025-08-20"
+  },
+  {
+    "id": "S5-005", "product_id": "BIL-MON-27", "product_name": "27'' Monitör", "category": "Teknoloji", "quantity": 1, "unit_price": 7000.0, "total_amount": 7000.0, "sale_date": "2025-08-18", "store_id": "S5", "date": "2025-08-18"
+  },
+  {
+    "id": "S5-006", "product_id": "GID-CAY", "product_name": "Çay", "category": "Gıda", "quantity": 20, "unit_price": 90.0, "total_amount": 1800.0, "sale_date": "2025-08-16", "store_id": "S5", "date": "2025-08-16"
+  },
+  {
+    "id": "S5-007", "product_id": "GID-SUT", "product_name": "Süt", "category": "Gıda", "quantity": 30, "unit_price": 35.0, "total_amount": 1050.0, "sale_date": "2025-08-15", "store_id": "S5", "date": "2025-08-15"
+  },
+  {
+    "id": "S5-008", "product_id": "GID-YOG", "product_name": "Yoğurt", "category": "Gıda", "quantity": 25, "unit_price": 50.0, "total_amount": 1250.0, "sale_date": "2025-08-13", "store_id": "S5", "date": "2025-08-13"
+  },
+  {
+    "id": "S5-009", "product_id": "GID-KAHVE", "product_name": "Kahve", "category": "Gıda", "quantity": 20, "unit_price": 120.0, "total_amount": 2400.0, "sale_date": "2025-08-11", "store_id": "S5", "date": "2025-08-11"
+  },
+  {
+    "id": "S5-010", "product_id": "GID-CAY", "product_name": "Çay", "category": "Gıda", "quantity": 15, "unit_price": 90.0, "total_amount": 1350.0, "sale_date": "2025-08-08", "store_id": "S5", "date": "2025-08-08"
+  },
+  {
+    "id": "S5-011", "product_id": "GID-SUT", "product_name": "Süt", "category": "Gıda", "quantity": 20, "unit_price": 35.0, "total_amount": 700.0, "sale_date": "2025-08-05", "store_id": "S5", "date": "2025-08-05"
+  },
+  {
+    "id": "S5-012", "product_id": "GID-YOG", "product_name": "Yoğurt", "category": "Gıda", "quantity": 15, "unit_price": 50.0, "total_amount": 750.0, "sale_date": "2025-08-02", "store_id": "S5", "date": "2025-08-02"
+  },
+  {
+    "id": "S5-013", "product_id": "GID-CAY", "product_name": "Çay", "category": "Gıda", "quantity": 10, "unit_price": 90.0, "total_amount": 900.0, "sale_date": "2025-07-30", "store_id": "S5", "date": "2025-07-30"
+  },
+  {
+    "id": "S5-014", "product_id": "GID-SUT", "product_name": "Süt", "category": "Gıda", "quantity": 15, "unit_price": 35.0, "total_amount": 525.0, "sale_date": "2025-07-28", "store_id": "S5", "date": "2025-07-28"
+  }
+]

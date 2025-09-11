@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { StoreSelector } from '@/components/StoreSelector';
 import { AvailabilityPanel } from './AvailabilityPanel';
-import { useCreateRequest } from '@/lib/hooks';
+import { useCreateRequest, useAvailability } from '@/lib/hooks';
 import { useUserStore } from '@/lib/stores';
 import type { InventoryItem } from '@/lib/api';
 
@@ -32,6 +32,9 @@ export function RequestModal({ open, onOpenChange, item }: RequestModalProps) {
   const createRequestMutation = useCreateRequest();
   const [showAvailability, setShowAvailability] = useState(false);
   
+  // Ürünün stok durumunu al
+  const { data: availability = [], isLoading: isLoadingAvailability } = useAvailability(item.sku);
+  
   const {
     register,
     handleSubmit,
@@ -49,6 +52,13 @@ export function RequestModal({ open, onOpenChange, item }: RequestModalProps) {
   });
 
   const targetStoreId = watch('targetStoreId');
+
+  // Sadece stoku olan mağazaları filtrele
+  const availableStoreIds = useMemo(() => {
+    return availability
+      .filter(store => store.stock > 0)
+      .map(store => store.storeId);
+  }, [availability]);
 
   const onSubmit = async (data: RequestFormData) => {
     if (!currentStoreId) return;
@@ -104,14 +114,20 @@ export function RequestModal({ open, onOpenChange, item }: RequestModalProps) {
             </div>
 
             <div className="space-y-2">
-              <Label>Hedef Mağaza (Opsiyonel)</Label>
+              <Label>Talep Edilecek Mağaza (Opsiyonel)</Label>
               <StoreSelector
                 value={targetStoreId}
                 onChange={(value) => setValue('targetStoreId', value)}
                 excludeStoreId={currentStoreId}
+                allowedStoreIds={availableStoreIds}
               />
               <p className="text-xs text-muted-foreground">
-                Belirtmezseniz, stoku olan tüm mağazalara talep gönderilir.
+                {isLoadingAvailability 
+                  ? "Stok durumu kontrol ediliyor..." 
+                  : availableStoreIds.length > 0 
+                    ? "Sadece stoku olan mağazalar gösteriliyor." 
+                    : "Bu ürün hiçbir mağazada stokta bulunmuyor."
+                }
               </p>
             </div>
 

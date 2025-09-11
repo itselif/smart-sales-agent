@@ -2,11 +2,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, Bot, ExternalLink, FileText, BarChart3, Package } from "lucide-react";
+import { Send, Bot, ExternalLink, FileText, BarChart3, Package, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppStore } from "@/lib/stores";
+import { orchestrate } from "@/lib/api";
 
 /** Backend'ten gelen intent'i UI için normalize eder */
 function normalizeIntent(raw?: string): "report" | "sales" | "stock" | "general" {
@@ -37,12 +38,53 @@ export function ChatBox() {
   const [isPending, setIsPending] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
+  // Chat geçmişini localStorage'dan yükle
+  useEffect(() => {
+    if (!currentStoreId) {
+      setMessages([]);
+      return;
+    }
+    
+    const savedMessages = localStorage.getItem(`chat-history-${currentStoreId}`);
+    
+    if (savedMessages) {
+      try {
+        const parsedMessages = JSON.parse(savedMessages);
+        setMessages(parsedMessages);
+      } catch (error) {
+        console.error("Chat geçmişi yüklenemedi:", error);
+        setMessages([]);
+      }
+    } else {
+      // Bu mağaza için hiç chat geçmişi yoksa boş array set et
+      setMessages([]);
+    }
+  }, [currentStoreId]);
+
+  // Chat geçmişini localStorage'a kaydet
+  useEffect(() => {
+    if (messages.length > 0 && currentStoreId) {
+      localStorage.setItem(`chat-history-${currentStoreId}`, JSON.stringify(messages));
+    }
+  }, [messages, currentStoreId]);
+
   const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
   // Yeni mesaj gelince otomatik aşağı kaydır
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isPending]);
+
+  const clearChatHistory = () => {
+    setMessages([]);
+    if (currentStoreId) {
+      localStorage.removeItem(`chat-history-${currentStoreId}`);
+    }
+    toast({
+      title: "Chat Geçmişi Temizlendi",
+      description: "Tüm konuşma geçmişi silindi.",
+    });
+  };
 
   const handleSend = async () => {
     if (!input.trim() || !currentStoreId) return;
@@ -57,33 +99,21 @@ export function ChatBox() {
     setIsPending(true);
 
     try {
-      const res = await fetch(`${apiBase}/orchestrate-llm`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ q: input, store_id: currentStoreId }),
-      });
-
-      if (!res.ok) {
-        const errText = await res.text().catch(() => "");
-        throw new Error(errText || `HTTP ${res.status}`);
-      }
-
-      const response = await res.json();
+      const response = await orchestrate(input, currentStoreId);
       const normalizedIntent = normalizeIntent(response.intent);
 
-      const rawUrl: string | undefined = response?.data?.public_url;
-      const publicUrl =
-        rawUrl ? (rawUrl.startsWith("http") ? rawUrl : `${apiBase}${rawUrl}`) : undefined;
+      const rawUrl: string | undefined = (response as any)?.public_url || (response as any)?.data?.public_url;
+      const publicUrl = rawUrl ? (rawUrl.startsWith("http") ? rawUrl : `${apiBase}${rawUrl}`) : undefined;
 
       const botMessage: ChatMessage = {
         id: `${Date.now() + 1}`,
         type: "bot",
-        content: response.reply || "İstek işlendi.",
+        content: (response as any).reply || "İstek işlendi.",
         intent: normalizedIntent,
-        data: response.data,
+        data: (response as any).data,
         publicUrl,
-        downloadUrl: undefined,
-        meta: response.meta,
+        downloadUrl: (response as any).download_url,
+        meta: (response as any).meta,
       };
 
       setMessages(prev => [...prev, botMessage]);
@@ -141,9 +171,21 @@ export function ChatBox() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Bot className="h-5 w-5" />
-          AI Asistan
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bot className="h-5 w-5" />
+            AI Asistan
+          </div>
+          {messages.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearChatHistory}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

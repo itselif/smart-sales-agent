@@ -34,3 +34,5 @@ class SalesAnalysisResult(BaseModel):
     products: List[ProductAnalysis] = Field(default_factory=list)
     trend_analysis: Dict             # {"weekly_pattern": {...}, "category_trends": {...}, ...}
     ai_insights: Optional[str] = None
+    total_revenue: float = 0.0       # Toplam ciro
+    total_sales: int = 0             # Toplam satış adedi

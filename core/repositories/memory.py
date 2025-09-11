@@ -133,11 +133,12 @@ class InMemorySalesRepository:
             _Wrap({
                 "store_id": r.store_id,
                 "date": r.date,
+                "sale_date": r.date,  # SalesAgent sale_date arıyor
                 "product_id": r.product_id,
                 "product_name": r.product_name,
                 "quantity": r.quantity,
                 "unit_price": r.unit_price,
-                "revenue": r.revenue,
+                "total_amount": r.revenue,  # SalesAgent total_amount arıyor
                 "category": r.category,
                 "discount": r.discount,
             })
@@ -155,6 +156,7 @@ class _StockItem:
     min_required: int
     price: float
     category: Optional[str] = None
+    store_id: Optional[str] = None
 
 class InMemoryStockRepository:
     """
@@ -186,10 +188,11 @@ class InMemoryStockRepository:
             min_req = int(d.get("min_required") or d.get("minRequired") or 0)
             price = float(d.get("price") or 0.0)
             cat = d.get("category")
+            store_id = d.get("store_id") or d.get("storeId")
             if pid:
                 out.append(_StockItem(
                     product_id=pid, name=name, current_stock=onhand,
-                    min_required=min_req, price=price, category=cat
+                    min_required=min_req, price=price, category=cat, store_id=store_id
                 ))
 
         if isinstance(raw, dict) and isinstance(raw.get("items"), list):
@@ -209,4 +212,9 @@ class InMemoryStockRepository:
     async def get_stock_snapshot(self, store_id: str) -> List[Any]:
         # Bu basit sürüm store_id filtrelemez; istersen JSON’a storeId koyup filtre ekleyebilirsin.
         # StockAgent attribute erişiyor → objeleri döndürelim (product_id, current_stock vs.)
-        return self._items[:]
+        # store_id'ye göre filtrele
+        filtered_items = []
+        for item in self._items:
+            if item.store_id == store_id:
+                filtered_items.append(item)
+        return filtered_items

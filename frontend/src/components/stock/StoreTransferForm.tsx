@@ -15,7 +15,7 @@ import type { InventoryItem } from "@/services/inventory";
 
 const transferSchema = z.object({
   itemId: z.string().min(1, "Ürün seçimi zorunludur"),
-  targetStoreId: z.string().min(1, "Hedef mağaza seçimi zorunludur"),
+  targetStoreId: z.string().min(1, "Talep edilecek mağaza seçimi zorunludur"),
   quantity: z.coerce.number().int().positive("Miktar pozitif bir sayı olmalıdır"),
   note: z.string().max(200, "Not 200 karakterden fazla olamaz").optional(),
 });
@@ -74,7 +74,7 @@ export function StoreTransferForm({ open, onOpenChange, preSelectedItem }: Store
         type: "OUT",
         quantity: data.quantity,
         reason: "STORE_TRANSFER_OUT",
-        note: `${targetStores.find((s) => s.id === data.targetStoreId)?.name || "Hedef mağaza"} mağazasına transfer. ${data.note || ""}`.trim(),
+        note: `${targetStores.find((s) => s.id === data.targetStoreId)?.name || "Talep edilecek mağaza"} mağazasına transfer. ${data.note || ""}`.trim(),
         targetStoreId: data.targetStoreId,
       });
 
@@ -131,15 +131,15 @@ export function StoreTransferForm({ open, onOpenChange, preSelectedItem }: Store
             {errors.itemId && <p className="text-sm text-destructive">{errors.itemId.message}</p>}
           </div>
 
-          {/* Hedef mağaza */}
+          {/* Talep edilecek mağaza */}
           <div className="space-y-2">
-            <Label htmlFor="targetStoreId">Hedef Mağaza *</Label>
+            <Label htmlFor="targetStoreId">Talep Edilecek Mağaza *</Label>
             <Select
               value={selectedTarget || ""}
               onValueChange={(value) => setValue("targetStoreId", value, { shouldValidate: true })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Hedef mağaza seçin" />
+                <SelectValue placeholder="Talep edilecek mağaza seçin" />
               </SelectTrigger>
               <SelectContent>
                 {targetStores.map((store) => (

@@ -17,7 +17,7 @@ class SalesService:
         if mb:
             self.mb_repo = MindbricksSalesRepository(mb)
 
-    async def analyze(self, store_id: str) -> Dict:
+    async def analyze(self, store_id: str, days: Optional[int] = None) -> Dict:
         # Önce Mindbricks'ten veri çekip lokal analiz yapmayı dene
         if self.use_mb and self.mb_repo:
             try:
@@ -26,7 +26,7 @@ class SalesService:
                 self.agent.repo = self.mb_repo
                 
                 # Analizi çalıştır
-                result = await self.agent.analyze_sales(store_id=store_id)
+                result = await self.agent.analyze_sales(store_id=store_id, days=days)
                 
                 # Repository'yi eski haline getir
                 self.agent.repo = original_repo
@@ -37,8 +37,8 @@ class SalesService:
                 print(f"[SalesService] Mindbricks hatası: {e}")
                 # Fallback: orijinal repository ile devam et
                 if hasattr(self.agent, 'repo') and self.agent.repo:
-                    return await self.agent.analyze_sales(store_id)
+                    return await self.agent.analyze_sales(store_id, days=days)
                 raise
         
         # Fallback: agent'ın orijinal repository'si
-        return await self.agent.analyze_sales(store_id)
+        return await self.agent.analyze_sales(store_id, days=days)

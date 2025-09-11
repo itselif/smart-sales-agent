@@ -60,6 +60,7 @@ class SalesAgent(BaseAgent):
         product_ids: Optional[List[str]] = None,
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
+        days: Optional[int] = None,
     ) -> Dict:
         """
         1) Veri topla (HER ZAMAN repo’dan)
@@ -69,10 +70,57 @@ class SalesAgent(BaseAgent):
         if not end_date:
             end_date = date.today()
         if not start_date:
-            start_date = end_date - timedelta(days=self.trend_analysis_period)
+            # days parametresi varsa onu kullan, yoksa default trend_analysis_period
+            analysis_days = days if days is not None else self.trend_analysis_period
+            start_date = end_date - timedelta(days=analysis_days)
 
         # 1) veri
         rows = await self._fetch_rows(store_id, start_date, end_date, product_ids)
+
+        # Eğer boşsa: pencereyi kademeli genişlet (kullanıcı yanıt alabilsin)
+        if not rows:
+            window_days = (end_date - start_date).days + 1
+            try_days = window_days
+            while try_days < self.max_window_days and not rows:
+                try_days += self.expand_days
+                new_start = end_date - timedelta(days=try_days)
+                rows = await self._fetch_rows(store_id, new_start, end_date, product_ids)
+                if rows:
+                    start_date = new_start
+                    break
+
+        # Hâlâ boşsa: veri evrenine göre anchor’la (repo’daki en güncel tarihe yanaş)
+        if not rows:
+            try:
+                # Repo’dan geniş bir aralık çekip en geç tarihi bul
+                universe = await self.repo.get_sales_records(
+                    store_id=store_id,
+                    start_date=end_date - timedelta(days=self.max_window_days),
+                    end_date=end_date,
+                    product_ids=product_ids,
+                )
+                latest = None
+                for r in universe:
+                    dtxt = getattr(r, 'sale_date', None) or getattr(r, 'date', None) or (r.get('sale_date') if isinstance(r, dict) else None) or (r.get('date') if isinstance(r, dict) else None)
+                    if not dtxt:
+                        continue
+                    try:
+                        d = datetime.fromisoformat(str(dtxt)).date()
+                    except Exception:
+                        try:
+                            d = datetime.strptime(str(dtxt), "%Y-%m-%d").date()
+                        except Exception:
+                            continue
+                    if latest is None or d > latest:
+                        latest = d
+                if latest is not None:
+                    anchor_end = latest
+                    anchor_start = anchor_end - timedelta(days=(days if days is not None else self.trend_analysis_period))
+                    rows = await self._fetch_rows(store_id, anchor_start, anchor_end, product_ids)
+                    if rows:
+                        start_date, end_date = anchor_start, anchor_end
+            except Exception:
+                pass
 
         # 2) analiz (tek tur)
         result = await self._run_analysis(store_id, rows, end_date=end_date)
@@ -91,6 +139,11 @@ class SalesAgent(BaseAgent):
             rows2 = await self._fetch_rows(store_id, new_start, end_date, product_ids)
             result = await self._run_analysis(store_id, rows2, end_date=end_date)
 
+        # Etkin analiz dönemi bilgisini ekle
+        result["effective_period_days"] = (end_date - start_date).days + 1
+        result["effective_start_date"] = start_date.isoformat()
+        result["effective_end_date"] = end_date.isoformat()
+
         return result
 
     # -------------------------------------------------------------------------
@@ -104,7 +157,7 @@ class SalesAgent(BaseAgent):
         end_date: date,
         product_ids: Optional[List[str]],
     ) -> List[Dict]:
-        """HER ZAMAN repository’den okur; repo yoksa açık hata fırlatır."""
+        """HER ZAMAN repository'den okur; repo yoksa açık hata fırlatır."""
         if not self.repo:
             raise RuntimeError(
                 "SalesRepository is not configured. "
@@ -116,7 +169,30 @@ class SalesAgent(BaseAgent):
             end_date=end_date,
             product_ids=product_ids,
         )
-        return [r.model_dump() for r in records]
+        # Pydantic v1/v2 uyumluluğu için
+        result = []
+        for r in records:
+            try:
+                if hasattr(r, 'model_dump'):
+                    result.append(r.model_dump())
+                elif hasattr(r, 'dict'):
+                    result.append(r.dict())
+                else:
+                    result.append(dict(r))
+            except Exception:
+                # Fallback: manual conversion
+                result.append({
+                    'id': getattr(r, 'id', ''),
+                    'product_id': getattr(r, 'product_id', ''),
+                    'product_name': getattr(r, 'product_name', ''),
+                    'category': getattr(r, 'category', ''),
+                    'quantity': getattr(r, 'quantity', 0),
+                    'unit_price': getattr(r, 'unit_price', 0.0),
+                    'total_amount': getattr(r, 'total_amount', 0.0),
+                    'sale_date': getattr(r, 'sale_date', ''),
+                    'store_id': getattr(r, 'store_id', ''),
+                })
+        return result
 
     async def _run_analysis(self, store_id: str, rows: List[Dict], *, end_date: date) -> Dict:
         if not rows:
@@ -145,13 +221,57 @@ class SalesAgent(BaseAgent):
         # Trend analizi
         trend = await self._advanced_trend_analysis(rows)
 
+        # Toplam revenue ve sales hesapla
+        total_revenue = sum(p.get("total_revenue", 0.0) for p in analyzed_products)
+        total_sales = sum(p.get("total_sold", 0) for p in analyzed_products)
+        
+        # Ek özetler: top/least seller ve ortalama tahmin güveni
+        top_seller = None
+        least_seller = None
+        avg_confidence = None
+        try:
+            if analyzed_products:
+                top_seller = max(analyzed_products, key=lambda p: float(p.get("total_revenue", 0.0)))
+                least_seller = min(analyzed_products, key=lambda p: int(p.get("total_sold", 0)))
+                confidences = []
+                for p in analyzed_products:
+                    sf = p.get("sales_forecast") or {}
+                    c = sf.get("confidence")
+                    if isinstance(c, (int, float)):
+                        confidences.append(float(c))
+                if confidences:
+                    avg_confidence = round(float(np.mean(confidences)), 2)
+        except Exception:
+            pass
+
         result = SalesAnalysisResult(
             status="success",
             store_id=store_id,
             analysis_period=self.trend_analysis_period,
             products=[ProductAnalysis(**a) for a in analyzed_products],
             trend_analysis=trend,
+            total_revenue=total_revenue,
+            total_sales=total_sales,
         ).model_dump()
+
+        # Sonuç zenginleştirme (model alanlarına ek)
+        if top_seller:
+            result["top_seller"] = {
+                "product_id": top_seller.get("product_id"),
+                "product_name": top_seller.get("product_name"),
+                "total_sold": top_seller.get("total_sold"),
+                "total_revenue": top_seller.get("total_revenue"),
+                "weekly_trend": top_seller.get("weekly_trend"),
+            }
+        if least_seller:
+            result["least_seller"] = {
+                "product_id": least_seller.get("product_id"),
+                "product_name": least_seller.get("product_name"),
+                "total_sold": least_seller.get("total_sold"),
+                "weekly_trend": least_seller.get("weekly_trend"),
+            }
+        if avg_confidence is not None:
+            result["avg_forecast_confidence"] = avg_confidence
 
         # AI özet (opsiyonel)
         result["ai_insights"] = await self._maybe_generate_ai_insights(result["products"])
@@ -177,7 +297,7 @@ class SalesAgent(BaseAgent):
                 }
             by_pid[pid]["sales_records"].append(r)
             by_pid[pid]["total_quantity"] += int(r["quantity"])
-            by_pid[pid]["total_revenue"] += float(r["revenue"])
+            by_pid[pid]["total_revenue"] += float(r.get("revenue", r.get("total_amount", 0)))
         for v in by_pid.values():
             v["sales_records"].sort(key=lambda x: x["date"])
             v["total_revenue"] = round(v["total_revenue"], 2)

@@ -83,7 +83,9 @@ export const listItems = (params: ListParams): Promise<{ items: InventoryItem[];
   
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
-      searchParams.append(key, value.toString());
+      // Backend store_id bekliyor, storeId'yi çevir
+      const paramKey = key === 'storeId' ? 'store_id' : key;
+      searchParams.append(paramKey, value.toString());
     }
   });
 
@@ -136,11 +138,31 @@ export const listAlerts = (params: { storeId: string; onlyOpen?: boolean }): Pro
   
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
-      searchParams.append(key, value.toString());
+      // Backend store_id bekliyor, storeId'yi çevir
+      const paramKey = key === 'storeId' ? 'store_id' : key;
+      searchParams.append(paramKey, value.toString());
     }
   });
 
   return httpFetch(`${API.lowStockAlerts}?${searchParams.toString()}`);
+};
+
+// Availability API - ürünün hangi mağazalarda kaç adet olduğunu gösterir
+export const getAvailability = (sku: string): Promise<{
+  sku: string;
+  availability: Array<{
+    store_id: string;
+    store_name: string;
+    stock: number;
+    min_required: number;
+    price: number;
+    category: string;
+    is_critical: boolean;
+  }>;
+  total_stores: number;
+  total_stock: number;
+}> => {
+  return httpFetch(`/inventory/availability/${sku}`);
 };
 
 // Auth API

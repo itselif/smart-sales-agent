@@ -55,20 +55,22 @@ export function AvailabilityPanel({ sku }: AvailabilityPanelProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        {availability.map((store) => (
-          <div key={store.storeId} className="flex items-center justify-between p-2 rounded-lg border">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm">{store.storeName}</span>
+        {availability
+          .filter((store) => store.stock > 0) // Sadece stoku olan mağazaları göster
+          .map((store) => (
+            <div key={store.storeId} className="flex items-center justify-between p-2 rounded-lg border">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium text-sm">{store.storeName}</span>
+              </div>
+              <Badge 
+                variant="default"
+                className="text-xs"
+              >
+                {store.stock} adet
+              </Badge>
             </div>
-            <Badge 
-              variant={store.stock > 0 ? "default" : "secondary"}
-              className="text-xs"
-            >
-              {store.stock > 0 ? `${store.stock} adet` : 'Stokta yok'}
-            </Badge>
-          </div>
-        ))}
+          ))}
       </CardContent>
     </Card>
   );

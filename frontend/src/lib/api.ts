@@ -3,6 +3,11 @@ const BASE =
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_BASE ||
   "http://localhost:8000";
+// Mock'ları aktif et - test için
+const USE_MOCKS = true; // String(import.meta.env.VITE_USE_MOCKS || "").toLowerCase() === "true";
+// For chat only: allow overriding mock behavior
+const RAW_MOCK_CHAT = (import.meta.env.VITE_USE_MOCKS_CHAT ?? "") as string;
+const USE_MOCKS_CHAT_DISABLED = true; // String(RAW_MOCK_CHAT).toLowerCase() === "false";
 
 const MB_STORES_URL = import.meta.env.VITE_STORES_URL as string | undefined;
 
@@ -19,6 +24,12 @@ export interface Store {
 }
 
 export async function getStores(): Promise<Store[]> {
+  console.log("🔍 getStores called, USE_MOCKS:", USE_MOCKS);
+  
+  if (USE_MOCKS) {
+    const m = await import("./mocks");
+    return m.mockGetStores();
+  }
   // 1) (Opsiyonel) Mindbricks URL'i doğrudan dene (CORS açıksa)
   if (MB_STORES_URL) {
     try {
@@ -44,11 +55,20 @@ export async function getStores(): Promise<Store[]> {
 
   // 2) Backend proxy (önerilen ve stabil yol)
   try {
+    console.log("🌐 Fetching stores from:", `${BASE}/stores/list`);
     const r = await fetch(`${BASE}/stores/list`, { headers: { Accept: "application/json" } });
-    if (!r.ok) return [];
+    console.log("📡 Response status:", r.status, r.ok);
+    if (!r.ok) {
+      console.error("❌ Response not OK:", r.status, r.statusText);
+      return [];
+    }
     const data = await r.json();
-    return Array.isArray(data) ? data : (data.stores ?? []);
-  } catch {
+    console.log("📦 Response data:", data);
+    const stores = Array.isArray(data) ? data : (data.stores ?? []);
+    console.log("🏪 Parsed stores:", stores);
+    return stores;
+  } catch (error) {
+    console.error("❌ Fetch error:", error);
     return [];
   }
 }
@@ -110,6 +130,10 @@ export async function listItems(params: {
   isActive?: boolean;
   sort?: string;
 }): Promise<{ items: InventoryItem[]; total: number }> {
+  if (USE_MOCKS) {
+    const m = await import("./mocks");
+    return m.mockListItems(params as any);
+  }
   const search = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== "") search.append(k, String(v));
@@ -123,6 +147,10 @@ export async function listItems(params: {
 export async function createItem(
   payload: Omit<InventoryItem, "id" | "createdAt" | "updatedAt">
 ): Promise<InventoryItem> {
+  if (USE_MOCKS) {
+    const m = await import("./mocks");
+    return m.mockCreateItem(payload as any) as unknown as InventoryItem;
+  }
   const r = await fetch(`${BASE}/inventory/items`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -133,6 +161,10 @@ export async function createItem(
 }
 
 export async function updateItem(id: string, patch: Partial<InventoryItem>): Promise<InventoryItem> {
+  if (USE_MOCKS) {
+    const m = await import("./mocks");
+    return m.mockUpdateItem(id, patch as any) as unknown as InventoryItem;
+  }
   const r = await fetch(`${BASE}/inventory/items/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -143,6 +175,10 @@ export async function updateItem(id: string, patch: Partial<InventoryItem>): Pro
 }
 
 export async function deleteItem(id: string): Promise<{ ok: boolean }> {
+  if (USE_MOCKS) {
+    const m = await import("./mocks");
+    return m.mockDeleteItem(id);
+  }
   const r = await fetch(`${BASE}/inventory/items/${id}`, { method: "DELETE" });
   if (!r.ok) throw new Error("Failed to delete item");
   return { ok: true };
@@ -150,6 +186,10 @@ export async function deleteItem(id: string): Promise<{ ok: boolean }> {
 
 /* Availability */
 export async function getAvailability(sku: string): Promise<InventoryAvailability[]> {
+  if (USE_MOCKS) {
+    const m = await import("./mocks");
+    return m.mockGetAvailability(sku) as any;
+  }
   const r = await fetch(`${BASE}/inventory/availability?sku=${encodeURIComponent(sku)}`);
   if (!r.ok) throw new Error("Failed to fetch availability");
   return r.json();
@@ -163,6 +203,10 @@ export async function createRequest(body: {
   quantity: number;
   note?: string;
 }): Promise<StockRequest> {
+  if (USE_MOCKS) {
+    const m = await import("./mocks");
+    return m.mockCreateRequest(body as any) as unknown as StockRequest;
+  }
   const r = await fetch(`${BASE}/inventory/requests`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -176,6 +220,10 @@ export async function listRequests(params: {
   storeId: string;
   role: "requester" | "target" | "all";
 }): Promise<StockRequest[]> {
+  if (USE_MOCKS) {
+    const m = await import("./mocks");
+    return m.mockListRequests(params as any) as unknown as StockRequest[];
+  }
   const search = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null) search.append(k, String(v));
@@ -190,6 +238,10 @@ export async function updateRequest(
   id: string,
   patch: { status: "approved" | "rejected" | "fulfilled"; decisionNote?: string }
 ): Promise<StockRequest> {
+  if (USE_MOCKS) {
+    const m = await import("./mocks");
+    return m.mockUpdateRequest(id, patch) as unknown as StockRequest;
+  }
   const r = await fetch(`${BASE}/inventory/requests/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -207,6 +259,10 @@ export async function transferStock(body: {
   toStoreId: string;
   note?: string;
 }): Promise<{ ok: boolean }> {
+  if (USE_MOCKS) {
+    const m = await import("./mocks");
+    return m.mockTransferStock(body);
+  }
   const r = await fetch(`${BASE}/inventory/transfer`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -221,6 +277,10 @@ export async function listAlerts(params: {
   storeId: string;
   onlyOpen?: boolean;
 }): Promise<{ items: LowStockAlert[] }> {
+  if (USE_MOCKS) {
+    const m = await import("./mocks");
+    return m.mockListAlerts(params as any) as unknown as { items: LowStockAlert[] };
+  }
   const search = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null) search.append(k, String(v));
@@ -242,12 +302,22 @@ export interface UserPrefs {
 }
 
 export async function getUserPrefs(userId: string): Promise<UserPrefs> {
+  if (USE_MOCKS) {
+    // local fallback: read from localStorage or defaults
+    const raw = localStorage.getItem(`prefs:${userId}`);
+    if (raw) return JSON.parse(raw);
+    return { userId, id: null, storeId: null, selectedStoreIds: [] };
+  }
   const r = await fetch(`${BASE}/user/prefs?user_id=${encodeURIComponent(userId)}`);
   if (!r.ok) throw new Error("Failed to load preferences");
   return r.json();
 }
 
 export async function saveUserPrefs(prefs: UserPrefs): Promise<{ ok: boolean; id?: string }> {
+  if (USE_MOCKS) {
+    localStorage.setItem(`prefs:${prefs.userId}`, JSON.stringify(prefs));
+    return { ok: true, id: prefs.id ?? "local" };
+  }
   const r = await fetch(`${BASE}/user/prefs`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -332,12 +402,20 @@ export interface OrchestrateResponse {
 }
 
 export async function getSales(storeId: string): Promise<SalesResponse> {
+  if (USE_MOCKS) {
+    const m = await import("./mocks");
+    return m.mockGetSales(storeId) as unknown as SalesResponse;
+  }
   const r = await fetch(`${BASE}/sales/analyze?store_id=${encodeURIComponent(storeId)}`);
   if (!r.ok) throw new Error("Sales analysis failed");
   return r.json();
 }
 
 export async function getStock(storeId: string): Promise<StockResponse> {
+  if (USE_MOCKS) {
+    const m = await import("./mocks");
+    return m.mockGetStock(storeId) as unknown as StockResponse;
+  }
   const r = await fetch(`${BASE}/stock/analysis?store_id=${encodeURIComponent(storeId)}`);
   if (!r.ok) throw new Error("Stock analysis failed");
   return r.json();
@@ -347,6 +425,10 @@ export async function buildReport(
   storeId: string,
   request = "standart rapor"
 ): Promise<ReportBuildResponse> {
+  if (USE_MOCKS) {
+    const m = await import("./mocks");
+    return m.mockBuildReport(storeId, request) as unknown as ReportBuildResponse;
+  }
   const r = await fetch(
     `${BASE}/report/build?store_id=${encodeURIComponent(storeId)}&request=${encodeURIComponent(
       request
@@ -357,6 +439,10 @@ export async function buildReport(
 }
 
 export async function orchestrate(q: string, storeId: string): Promise<OrchestrateResponse> {
+  if (USE_MOCKS && !USE_MOCKS_CHAT_DISABLED) {
+    const m = await import("./mocks");
+    return m.mockOrchestrate(q, storeId) as unknown as OrchestrateResponse;
+  }
   const r = await fetch(
     `${BASE}/orchestrate-llm?q=${encodeURIComponent(q)}&store_id=${encodeURIComponent(storeId)}`
   );

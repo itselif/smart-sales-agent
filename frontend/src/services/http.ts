@@ -2,9 +2,9 @@ import { useUserStore } from '@/lib/stores';
 
 export const API = {
   baseUrl: import.meta.env.VITE_API_BASE || "http://localhost:8000",
-  inventoryItems: "/inventoryitems",
+  inventoryItems: "/inventory/items",
   inventoryMovements: "/inventorymovements", 
-  lowStockAlerts: "/lowstockalerts",
+  lowStockAlerts: "/inventory/alerts",
   me: "/auth/me",
 };
 
