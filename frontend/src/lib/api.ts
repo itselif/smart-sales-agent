@@ -401,6 +401,23 @@ export interface OrchestrateResponse {
   download_url?: string;
 }
 
+export interface StockMovement {
+  id: string;
+  itemId: string;
+  storeId: string;
+  type: "IN" | "OUT";
+  quantity: number;
+  reason: "PURCHASE" | "SALE" | "ADJUSTMENT" | "TRANSFER_IN" | "TRANSFER_OUT" | "RETURN" | "DAMAGE" | "OTHER";
+  note?: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface StockMovementsResponse {
+  items: StockMovement[];
+  total: number;
+}
+
 export async function getSales(storeId: string): Promise<SalesResponse> {
   if (USE_MOCKS) {
     const m = await import("./mocks");
@@ -447,5 +464,58 @@ export async function orchestrate(q: string, storeId: string): Promise<Orchestra
     `${BASE}/orchestrate-llm?q=${encodeURIComponent(q)}&store_id=${encodeURIComponent(storeId)}`
   );
   if (!r.ok) throw new Error("Orchestrate failed");
+  return r.json();
+}
+
+export async function getMovements(params: {
+  storeId: string;
+  itemId?: string;
+  type?: "IN" | "OUT";
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  size?: number;
+  sort?: string;
+}): Promise<StockMovementsResponse> {
+  if (USE_MOCKS) {
+    const m = await import("./mocks");
+    return m.mockListMovements(params) as unknown as StockMovementsResponse;
+  }
+  
+  const searchParams = new URLSearchParams();
+  searchParams.set('store_id', params.storeId);
+  if (params.itemId) searchParams.set('item_id', params.itemId);
+  if (params.type) searchParams.set('type', params.type);
+  if (params.dateFrom) searchParams.set('date_from', params.dateFrom);
+  if (params.dateTo) searchParams.set('date_to', params.dateTo);
+  if (params.page) searchParams.set('page', params.page.toString());
+  if (params.size) searchParams.set('size', params.size.toString());
+  if (params.sort) searchParams.set('sort', params.sort);
+  
+  const r = await fetch(`${BASE}/movements?${searchParams.toString()}`);
+  if (!r.ok) throw new Error("Movements fetch failed");
+  return r.json();
+}
+
+export async function createMovement(body: {
+  itemId: string;
+  storeId: string;
+  type: "IN" | "OUT";
+  quantity: number;
+  reason: "PURCHASE" | "SALE" | "ADJUSTMENT" | "TRANSFER_IN" | "TRANSFER_OUT" | "RETURN" | "DAMAGE" | "OTHER";
+  note?: string;
+  createdBy: string;
+}): Promise<StockMovement> {
+  if (USE_MOCKS) {
+    const m = await import("./mocks");
+    return m.mockCreateMovement(body) as unknown as StockMovement;
+  }
+  
+  const r = await fetch(`${BASE}/movements`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error("Movement creation failed");
   return r.json();
 }

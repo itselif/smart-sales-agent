@@ -16,8 +16,11 @@ import {
   updateRequest,
   transferStock,
   listAlerts,
+  getMovements,
+  createMovement,
   type InventoryItem,
   type StockRequest,
+  type StockMovement,
 } from './api';
 
 // Ortak query ayarları
@@ -259,5 +262,49 @@ export const useAlerts = (params: { storeId: string; onlyOpen?: boolean }) => {
     queryFn: () => listAlerts(params),
     enabled: !!params.storeId,
     ...commonQueryOpts,
+  });
+};
+
+// Movements hooks
+export const useMovements = (params: {
+  storeId: string;
+  itemId?: string;
+  type?: "IN" | "OUT";
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  size?: number;
+  sort?: string;
+}) => {
+  return useQuery({
+    queryKey: ['movements', params.storeId, params],
+    queryFn: () => getMovements(params),
+    enabled: !!params.storeId,
+    ...commonQueryOpts,
+  });
+};
+
+export const useCreateMovement = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: createMovement,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['movements'] });
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      toast({
+        title: 'Başarılı',
+        description: 'Stok hareketi başarıyla oluşturuldu.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Hata',
+        description: error.message || 'Stok hareketi oluşturulamadı.',
+        variant: 'destructive',
+      });
+    },
   });
 };

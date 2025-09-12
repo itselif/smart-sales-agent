@@ -50,6 +50,18 @@ export interface MockLowStockAlert {
 	isAcknowledged: boolean;
 }
 
+export interface MockStockMovement {
+	id: Id;
+	itemId: Id;
+	storeId: Id;
+	type: "IN" | "OUT";
+	quantity: number;
+	reason: "PURCHASE" | "SALE" | "ADJUSTMENT" | "TRANSFER_IN" | "TRANSFER_OUT" | "RETURN" | "DAMAGE" | "OTHER";
+	note?: string;
+	createdAt: string;
+	createdBy: string;
+}
+
 export interface MockSalesProduct {
 	product_id: Id;
 	product_name?: string;
@@ -101,6 +113,29 @@ export type DeepPartial<T> = {
 /* In-memory data */
 const now = () => new Date().toISOString();
 const randomId = () => Math.random().toString(36).slice(2, 10);
+const STORAGE_OK = typeof window !== 'undefined' && !!window.localStorage;
+
+function loadArray<T>(key: string, fallback: T[]): T[] {
+	try {
+		if (STORAGE_OK) {
+			const raw = window.localStorage.getItem(key);
+			if (raw) return JSON.parse(raw) as T[];
+		}
+	} catch {}
+	return fallback;
+}
+
+function saveArray<T>(key: string, data: T[]): void {
+	try {
+		if (STORAGE_OK) {
+			window.localStorage.setItem(key, JSON.stringify(data));
+		}
+	} catch {}
+}
+
+const LS_ITEMS_KEY = 'mock_items_v1';
+const LS_REQUESTS_KEY = 'mock_requests_v1';
+const LS_MOVEMENTS_KEY = 'mock_movements_v1';
 
 const stores: MockStore[] = [
 	{ id: "s1", name: "İstanbul-Merkez", fullname: "İstanbul Merkez Mağaza", city: "İstanbul", active: true },
@@ -110,7 +145,7 @@ const stores: MockStore[] = [
 	{ id: "s5", name: "Antalya-Konyaaltı", fullname: "Antalya Konyaaltı Şube", city: "Antalya", active: true },
 ];
 
-const items: MockInventoryItem[] = [
+const seedItems: MockInventoryItem[] = [
   // İstanbul teknoloji + gıda (s1)
   { id: "i1",  storeId: "s1", sku: "TEL-IPH14",   name: "Akıllı Telefon iPhone 14", price: 45000, stock: 8,  reorderLevel: 5,  category: "Teknoloji", isActive: true, createdAt: now(), updatedAt: now() },
   { id: "i2",  storeId: "s1", sku: "LPT-DELLXPS", name: "Dizüstü Dell XPS 13",       price: 52000, stock: 5,  reorderLevel: 3,  category: "Teknoloji", isActive: true, createdAt: now(), updatedAt: now() },
@@ -184,10 +219,22 @@ const items: MockInventoryItem[] = [
   { id: "i34", storeId: "s5", sku: "GID-CAY",     name: "Çay",                        price: 90,    stock: 25, reorderLevel: 15, category: "Gıda",      isActive: true, createdAt: now(), updatedAt: now() },
 ];
 
+let items: MockInventoryItem[] = loadArray<MockInventoryItem>(LS_ITEMS_KEY, seedItems.slice());
 
-let requests: MockStockRequest[] = [
+
+let requests: MockStockRequest[] = loadArray<MockStockRequest>(LS_REQUESTS_KEY, [
 	{ id: "r1", itemId: "i2", sku: "SKU-002", name: "Çay", requesterStoreId: "s1", targetStoreId: "s2", quantity: 10, status: "pending", createdAt: now(), updatedAt: now(), note: "Acil" },
-];
+]);
+
+let movements: MockStockMovement[] = loadArray<MockStockMovement>(LS_MOVEMENTS_KEY, [
+	// Örnek stok hareketleri
+	{ id: "m1", itemId: "i1", storeId: "s1", type: "IN", quantity: 10, reason: "PURCHASE", note: "İlk stok girişi", createdAt: now(), createdBy: "admin" },
+	{ id: "m2", itemId: "i1", storeId: "s1", type: "OUT", quantity: 2, reason: "SALE", note: "Satış", createdAt: now(), createdBy: "admin" },
+	{ id: "m3", itemId: "i2", storeId: "s1", type: "IN", quantity: 5, reason: "PURCHASE", note: "Yeni sipariş", createdAt: now(), createdBy: "admin" },
+	{ id: "m4", itemId: "i3", storeId: "s1", type: "OUT", quantity: 1, reason: "SALE", note: "Satış", createdAt: now(), createdBy: "admin" },
+	{ id: "m5", itemId: "i4", storeId: "s1", type: "IN", quantity: 20, reason: "PURCHASE", note: "Toplu alım", createdAt: now(), createdBy: "admin" },
+	{ id: "m6", itemId: "i5", storeId: "s1", type: "OUT", quantity: 5, reason: "SALE", note: "Satış", createdAt: now(), createdBy: "admin" },
+]);
 
 /* Stores */
 export async function mockGetStores(): Promise<MockStore[]> {
@@ -259,6 +306,7 @@ export async function mockCreateItem(payload: Omit<MockInventoryItem, "id" | "cr
 	await delay(200);
 	const created: MockInventoryItem = { ...payload, id: randomId(), createdAt: now(), updatedAt: now() };
 	items.push(created);
+	saveArray(LS_ITEMS_KEY, items);
 	return created;
 }
 
@@ -267,6 +315,7 @@ export async function mockUpdateItem(id: string, patch: DeepPartial<MockInventor
 	const idx = items.findIndex((x) => x.id === id);
 	if (idx === -1) throw new Error("Item not found");
 	items[idx] = { ...items[idx], ...patch, updatedAt: now() } as MockInventoryItem;
+	saveArray(LS_ITEMS_KEY, items);
 	return items[idx];
 }
 
@@ -274,6 +323,7 @@ export async function mockDeleteItem(id: string): Promise<{ ok: boolean }> {
 	await delay(150);
 	const len = items.length;
 	for (let i = items.length - 1; i >= 0; i--) if (items[i].id === id) items.splice(i, 1);
+	saveArray(LS_ITEMS_KEY, items);
 	return { ok: len !== items.length };
 }
 
@@ -310,6 +360,7 @@ export async function mockCreateRequest(body: {
 		note: body.note,
 	};
 	requests.push(req);
+	saveArray(LS_REQUESTS_KEY, requests);
 	return req;
 }
 
@@ -339,6 +390,38 @@ export async function mockTransferStock(body: { itemId: string; quantity: number
 		items.push(dstItem);
 	}
 	dstItem.stock += moved;
+
+	// Stok hareketi kayıtları oluştur
+	const outMovement: MockStockMovement = {
+		id: randomId(),
+		itemId: body.itemId,
+		storeId: body.fromStoreId,
+		type: "OUT",
+		quantity: moved,
+		reason: "TRANSFER_OUT",
+		note: body.note || `Transfer to ${body.toStoreId}`,
+		createdAt: now(),
+		createdBy: "system"
+	};
+	movements.push(outMovement);
+
+	const inMovement: MockStockMovement = {
+		id: randomId(),
+		itemId: dstItem.id,
+		storeId: body.toStoreId,
+		type: "IN",
+		quantity: moved,
+		reason: "TRANSFER_IN",
+		note: body.note || `Transfer from ${body.fromStoreId}`,
+		createdAt: now(),
+		createdBy: "system"
+	};
+	movements.push(inMovement);
+
+	// persist arrays
+	saveArray(LS_ITEMS_KEY, items);
+	saveArray(LS_MOVEMENTS_KEY, movements);
+
 	return { ok: true };
 }
 
@@ -349,6 +432,7 @@ export async function mockUpdateRequest(id: string, patch: { status: "approved" 
 	const prev = requests[idx];
 	const updated = { ...prev, ...patch, updatedAt: now() } as MockStockRequest;
 	requests[idx] = updated;
+	saveArray(LS_REQUESTS_KEY, requests);
 
 	// Auto-fulfill stock move logic: when status becomes fulfilled, move quantity from target->requester if available
 	if (patch.status === "fulfilled") {
@@ -367,9 +451,119 @@ export async function mockUpdateRequest(id: string, patch: { status: "approved" 
 					category: srcItem.category ?? null, isActive: true, createdAt: now(), updatedAt: now()
 				});
 			}
+			// persist items after fulfill
+			saveArray(LS_ITEMS_KEY, items);
 		}
 	}
 	return updated;
+}
+
+/* Movements */
+export async function mockListMovements(params: {
+	storeId: string;
+	itemId?: string;
+	type?: "IN" | "OUT";
+	dateFrom?: string;
+	dateTo?: string;
+	page?: number;
+	size?: number;
+	sort?: string;
+}): Promise<{ items: MockStockMovement[]; total: number }> {
+	await delay(150);
+	let list = movements.filter((x) => x.storeId === params.storeId);
+	
+	if (params.itemId) list = list.filter((x) => x.itemId === params.itemId);
+	if (params.type) list = list.filter((x) => x.type === params.type);
+	if (params.dateFrom) {
+		const fromDate = new Date(params.dateFrom);
+		list = list.filter((x) => new Date(x.createdAt) >= fromDate);
+	}
+	if (params.dateTo) {
+		const toDate = new Date(params.dateTo);
+		list = list.filter((x) => new Date(x.createdAt) <= toDate);
+	}
+
+	// Sıralama
+	if (params.sort) {
+		const isDesc = params.sort.startsWith('-');
+		const sortField = isDesc ? params.sort.slice(1) : params.sort;
+		
+		switch (sortField) {
+			case 'createdAt':
+				list.sort((a, b) => {
+					const result = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+					return isDesc ? -result : result;
+				});
+				break;
+			case 'quantity':
+				list.sort((a, b) => {
+					const result = a.quantity - b.quantity;
+					return isDesc ? -result : result;
+				});
+				break;
+			case 'type':
+				list.sort((a, b) => {
+					const result = a.type.localeCompare(b.type);
+					return isDesc ? -result : result;
+				});
+				break;
+			default:
+				// Varsayılan olarak tarihe göre azalan sırala
+				list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+		}
+	} else {
+		// Varsayılan sıralama: en yeni önce
+		list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+	}
+
+	const total = list.length;
+	const page = params.page ?? 1;
+	const size = params.size ?? 20;
+	const start = (page - 1) * size;
+	const paged = list.slice(start, start + size);
+	
+	return { items: paged, total };
+}
+
+export async function mockCreateMovement(body: {
+	itemId: string;
+	storeId: string;
+	type: "IN" | "OUT";
+	quantity: number;
+	reason: "PURCHASE" | "SALE" | "ADJUSTMENT" | "TRANSFER_IN" | "TRANSFER_OUT" | "RETURN" | "DAMAGE" | "OTHER";
+	note?: string;
+	createdBy: string;
+}): Promise<MockStockMovement> {
+	await delay(150);
+	const movement: MockStockMovement = {
+		id: randomId(),
+		itemId: body.itemId,
+		storeId: body.storeId,
+		type: body.type,
+		quantity: body.quantity,
+		reason: body.reason,
+		note: body.note,
+		createdAt: now(),
+		createdBy: body.createdBy,
+	};
+	movements.push(movement);
+
+	// Stok miktarını güncelle
+	const item = items.find((x) => x.id === body.itemId && x.storeId === body.storeId);
+	if (item) {
+		if (body.type === "IN") {
+			item.stock += body.quantity;
+		} else {
+			item.stock = Math.max(0, item.stock - body.quantity);
+		}
+		item.updatedAt = now();
+	}
+
+	// persist arrays
+	saveArray(LS_ITEMS_KEY, items);
+	saveArray(LS_MOVEMENTS_KEY, movements);
+
+	return movement;
 }
 
 /* Alerts */
@@ -463,6 +657,6 @@ export async function mockOrchestrate(q: string, storeId: string): Promise<{ int
 /* Utils */
 function delay(ms: number) { return new Promise((res) => setTimeout(res, ms)); }
 
-export const __mock = { stores, items, requests };
+export const __mock = { stores, items, requests, movements };
 
 
