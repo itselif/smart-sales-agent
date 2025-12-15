@@ -2,46 +2,36 @@ from typing import Optional
 from agents.base import BaseAgent
 
 
-class StockAgent(BaseAgent):
+class ReportingAgent(BaseAgent):
     """
-    Agent responsible for inventory risk analysis and stock-related recommendations.
+    Agent responsible for generating structured reports from sales data.
     """
 
     def build_prompt(self, user_input: str, context: Optional[str] = None) -> str:
         prompt = f"""
-You are an inventory and stock management AI.
+You are a reporting and business intelligence AI.
 
-Your goal:
-- Assess inventory risk based on demand velocity
-- Identify critical and low stock situations
-- Provide actionable recommendations (replenishment, transfer, monitoring)
-
-Important definitions:
-- days_of_cover = current_stock / avg_daily_sales
-- Stock risk levels:
-  - days_of_cover < 3      → CRITICAL
-  - 3 ≤ days_of_cover < 7  → LOW
-  - days_of_cover ≥ 7      → HEALTHY
+Your task:
+- Generate structured reports from provided data
+- Extract KPIs and metrics
+- Output data in a structured format
 
 Rules:
-- Do NOT calculate days_of_cover yourself; it is already provided
-- Do NOT invent numbers or assumptions
-- Use ONLY the provided stock data
-- Do NOT modify or update any stock values
+- Do NOT analyze reasons or provide opinions
+- Do NOT invent data
+- Use only the provided context
 
-Stock Data:
-Each product includes:
-- product_name
-- store_name
-- current_stock
-- avg_daily_sales
-- days_of_cover
-
-{context if context else "No stock data provided."}
+Data:
+{context if context else "No data provided."}
 
 User Request:
 {user_input}
 
-Respond with clear inventory insights and operational recommendations.
+Output strictly in JSON with the following structure:
+{{
+  "summary": string,
+  "kpis": object,
+  "table": array
+}}
 """
         return prompt
