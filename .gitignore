@@ -1,0 +1,46 @@
+# ========================
+# Python
+# ========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+.env
+.venv/
+venv/
+ENV/
+
+# ========================
+# FastAPI / Logs
+# ========================
+logs/
+*.log
+
+# ========================
+# RAG / Vector DB
+# ========================
+vector_store/
+*.db
+
+# ========================
+# OS
+# ========================
+.DS_Store
+Thumbs.db
+
+# ========================
+# Frontend (React)
+# ========================
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# ========================
+# Editor
+# ========================
+.vscode/
+.idea/
