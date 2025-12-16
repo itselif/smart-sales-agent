@@ -1,23 +1,23 @@
 import os
 from dotenv import load_dotenv
-import google.generativeai as genai
+from openai import OpenAI
 
 load_dotenv()
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 def get_llm():
-    model = genai.GenerativeModel("models/gemini-2.5-flash")
-
     def call_llm(prompt: str) -> str:
-        response = model.generate_content(
-            prompt,
-            generation_config={
-                "temperature": 0,
-                "max_output_tokens": 1024,
-            }
-        )
-        return response.text.strip()
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0,
+                max_tokens=1024,
+            )
+            return (response.choices[0].message.content or "").strip()
+        except Exception as exc:
+            return f"An error occurred during the LLM call: {type(exc).__name__}: {exc}"
 
     return call_llm

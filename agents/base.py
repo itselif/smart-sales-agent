@@ -34,10 +34,14 @@ class BaseAgent(ABC):
         """
         prompt = self.build_prompt(user_input, context)
 
-        response = self.llm(prompt)
+        response_text = self.llm(prompt)
 
         return {
             "agent": self.name,
-            "input": user_input,
-            "output": response,
+            "response": response_text,
+            "output": response_text,
+            "data": None,
+            "publicUrl": None,
+            "downloadUrl": None,
+            "meta": {},
         }

@@ -22,6 +22,4 @@ def query_ai(request: AIRequest):
         context=request.context
     )
 
-    return {
-        "result": result
-    }
+    return result

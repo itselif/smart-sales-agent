@@ -49,18 +49,45 @@ Respond with ONLY one of the following values:
 - stock_agent
 """
 
-        decision = self.llm(decision_prompt).strip()
+        decision_raw = self.llm(decision_prompt)
+        decision = (decision_raw or "").strip()
 
-        if decision == "sales_agent":
+        # If the LLM call returned an error message, directly return it to the user
+        if "An error occurred in the LLM call" in decision:
+            return {
+                "agent": "general",
+                "response": decision,
+                "output": decision,
+                "data": None,
+                "publicUrl": None,
+                "downloadUrl": None,
+                "meta": {},
+            }
+
+        d = decision.lower()
+
+        if d in ("sales_agent", "sales"):
             return self.sales_agent.run(user_input, context)
 
-        if decision == "reporting_agent":
+        if d in ("reporting_agent", "report", "report_agent"):
             return self.reporting_agent.run(user_input, context)
 
-        if decision == "stock_agent":
+        if d in ("stock_agent", "stock", "inventory_agent", "inventory"):
+            return self.stock_agent.run(user_input, context)
+
+        if "sales" in d:
+            return self.sales_agent.run(user_input, context)
+
+        if "report" in d:
+            return self.reporting_agent.run(user_input, context)
+
+        if "stock" in d or "inventory" in d:
             return self.stock_agent.run(user_input, context)
 
         # fallback
+        fallback_text = "I couldn't route your request to a suitable agent at the moment. Could you please clarify your request a bit more?"
         return {
-            "error": "Could not determine the appropriate agent."
+            "agent": "general",
+            "response": fallback_text,
+            "output": fallback_text,
         }
