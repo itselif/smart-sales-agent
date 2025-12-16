@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
-import { Store } from "@/types/inventory";
-import { mockStores } from "@/services/api";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import type { Store } from "@/types/inventory";
+import { getStores } from "@/services/api";
 
 interface StoreContextType {
   currentStoreId: string | null;
@@ -14,9 +14,25 @@ interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [currentStoreId, setCurrentStoreId] = useState<string | null>(mockStores[0]?.id || null);
+  const [currentStoreId, setCurrentStoreId] = useState<string | null>(null);
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
-  const [stores] = useState<Store[]>(mockStores);
+  const [stores, setStores] = useState<Store[]>([]);
+
+  useEffect(() => {
+    async function fetchStores() {
+      try {
+        const data = await getStores();
+        console.log("Fetched stores:", data);
+        setStores(data);
+        if (data.length > 0 && !currentStoreId) {
+          setCurrentStoreId(data[0].id);
+        }
+      } catch (err) {
+        console.error("Failed to fetch stores", err);
+      }
+    }
+    fetchStores();
+  }, []);
 
   const currentStore = stores.find((s) => s.id === currentStoreId) || null;
 
@@ -38,8 +54,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
 export function useStore() {
   const context = useContext(StoreContext);
-  if (context === undefined) {
-    throw new Error("useStore must be used within a StoreProvider");
-  }
+  if (!context) throw new Error("useStore must be used within a StoreProvider");
   return context;
 }

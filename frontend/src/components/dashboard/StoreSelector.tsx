@@ -11,6 +11,19 @@ import { Building2 } from "lucide-react";
 export function StoreSelector() {
   const { currentStoreId, setCurrentStoreId, stores } = useStore();
 
+  console.log("StoreSelector - stores:", stores, "currentStoreId:", currentStoreId);
+
+  if (stores.length === 0) {
+    return (
+      <Select disabled>
+        <SelectTrigger className="w-[220px] bg-card border-border">
+          <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
+          <SelectValue placeholder="No stores available" />
+        </SelectTrigger>
+      </Select>
+    );
+  }
+
   return (
     <Select value={currentStoreId || ""} onValueChange={setCurrentStoreId}>
       <SelectTrigger className="w-[220px] bg-card border-border">

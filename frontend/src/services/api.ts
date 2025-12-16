@@ -83,6 +83,13 @@ export async function getSalesOverview(storeId: string): Promise<SalesResponse> 
 
 // Stores endpoint
 export async function getStores(): Promise<Store[]> {
-  return apiFetch<Store[]>("/stores");
+  try {
+    const data = await apiFetch<Store[]>("/stores");
+    console.log("getStores API response:", data);
+    return data;
+  } catch (error) {
+    console.error("getStores error:", error);
+    throw error;
+  }
 }
 

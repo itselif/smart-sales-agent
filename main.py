@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routes import router
+from api.routes import router, inventory_router
+from config.settings import database
 
 app = FastAPI(
     title="Smart Sales AI",
@@ -18,3 +19,12 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.include_router(inventory_router)
+
+@app.on_event("startup")
+async def startup():
+    await database.connect()
+
+@app.on_event("shutdown")
+async def shutdown():
+    await database.disconnect()

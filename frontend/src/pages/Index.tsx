@@ -6,8 +6,9 @@ import { SalesOverview } from "@/components/dashboard/SalesOverview";
 import { ReportViewer } from "@/components/dashboard/ReportViewer";
 import { ChatBot } from "@/components/dashboard/ChatBot";
 import { useStore } from "@/context/StoreContext";
-import { StockResponse, SalesResponse, ReportData } from "@/types/inventory";
+import type { StockResponse, SalesResponse, ReportData, Store, AIQueryResponse } from "@/types/inventory";
 import { Package, AlertTriangle, TrendingUp, Boxes } from "lucide-react";
+import { getInventoryItems, getStores, orchestrate } from "@/services/api"; 
 
 const Index = () => {
   const { currentStoreId } = useStore();
@@ -16,12 +17,35 @@ const Index = () => {
   const [reports, setReports] = useState<ReportData[]>([]);
   const [loading, setLoading] = useState(true);
 
+
   useEffect(() => {
-    // Gerçek backend'e bağlandığında burada API çağrısı yapılacak.
-    setLoading(false);
+    if (!currentStoreId) return;
+    setLoading(true);
+
+    getInventoryItems(currentStoreId)
+      .then((data: StockResponse) => {
+        setStockData(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
   }, [currentStoreId]);
 
-  const handleReportData = (data: any) => {
+
+  useEffect(() => {
+    if (!currentStoreId) return;
+
+    getStores()
+      .then((stores: Store[]) => {
+
+      })
+      .catch(console.error);
+  }, [currentStoreId]);
+
+  
+  const handleReportData = (data: AIQueryResponse) => {
     if (data?.publicUrl) {
       setReports((prev) => [
         {
@@ -83,10 +107,7 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Stock Table - Takes 2 columns */}
           <div className="lg:col-span-2">
-            <StockTable
-              products={stockData?.products || []}
-              loading={loading}
-            />
+            <StockTable products={stockData?.products || []} loading={loading} />
           </div>
 
           {/* Reports Panel */}
