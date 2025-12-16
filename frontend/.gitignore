@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+.env
+
+# Node modules
+node_modules/
+
+# IDE / editor dosyaları (opsiyonel)
+.vscode/
+.DS_Store
